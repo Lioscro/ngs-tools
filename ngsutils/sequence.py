@@ -61,9 +61,10 @@ def _calculate_positional_probs(sequences, qualities):
 
 def call_consensus_with_qualities(
     sequences: List[str],
-    qualities: Union[List[str], List[array]],
+    qualities: Union[List[str], List[array.array]],
     q_threshold: int = 30,
-    proportion: float = 0.05
+    proportion: float = 0.05,
+    return_qualities: bool = False,
 ):
     """Given a list of sequences and their base qualities, constructs a *set* of consensus
     sequences by iteratively constructing a consensus (by selecting the most likely
@@ -133,9 +134,11 @@ def call_consensus_with_qualities(
     consensuses = []
     assignments = np.full(len(sequences), -1, dtype=int)
     index_transform = {i: i for i in range(len(sequences))}
+    _sequences_arrays = sequences_arrays.copy()
+    _qualities_arrays = qualities_arrays.copy()
     while True:
         consensus, assigned = _call_consensus(
-            sequences_arrays, qualities_arrays, chars, threshold
+            _sequences_arrays, _qualities_arrays, chars, threshold
         )
         if consensus in consensuses:
             label = consensuses.index(consensus)
@@ -147,11 +150,38 @@ def call_consensus_with_qualities(
         unassigned_indices = (~assigned).nonzero()[0]
         assignments[[index_transform[i] for i in assigned_indices]] = label
         if all(assigned):
-            return consensuses, assignments
-
+            break
         index_transform = {
             i: index_transform[j]
             for i, j in enumerate(unassigned_indices)
         }
-        sequences_arrays = sequences_arrays[~assigned]
-        qualities_arrays = qualities_arrays[~assigned]
+        _sequences_arrays = _sequences_arrays[~assigned]
+        _qualities_arrays = _qualities_arrays[~assigned]
+
+    # Compute qualities for each consensus sequence if return_qualities = True
+    if return_qualities:
+        consensuses_qualities = []
+        for i, consensus in enumerate(consensuses):
+            assigned = assignments == i
+            assigned_sequences = sequences_arrays[assigned]
+            assigned_qualities = qualities_arrays[assigned]
+            consensus_array = _sequence_to_array(consensus, chars, l)
+
+            # (assigned_sequences & consensus_array) is a 3-dimensional array
+            # First dimension contains each sequence, second contains base identity,
+            # third contains positions, so (assigned_sequences & consensus_array) contains True
+            # in positions of each sequence where the sequence has the same base as the
+            # consensus. Taking the any(axis=1) of this gives a 2D matrix where each row
+            # corresponds to each sequence and each column contains True if the base at that
+            # position in that sequence matches the consensus. Multiplying this
+            # boolean mask with the assigned_qualities gives the base quality of each
+            # sequence only at the positions where the base matches that of the consensus.
+            # Then, we take the maximum quality among all these bases.
+            consensus_qualities = (
+                assigned_qualities *
+                (assigned_sequences & consensus_array).any(axis=1)
+            ).max(axis=0)
+            consensuses_qualities.append(consensus_qualities)
+        return consensuses, assignments, consensus_qualities
+    else:
+        return consensuses, assignments
