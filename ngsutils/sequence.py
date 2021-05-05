@@ -395,7 +395,11 @@ def correct_sequences_to_whitelist(
     that the sequence originated from the most likely barcode is less than `confidence`,
     assignment is skipped.
 
-    https://github.com/10XGenomics/cellranger/blob/a83c753ce641db6409a59ad817328354fbe7187e/lib/rust/annotate_reads/src/barcodes.rs
+    This procedure follows the barcode correction procedure in Cell Ranger by
+    10X Genomics. Some modifications were made to support ambiguous bases and
+    prevent floating-point underflow.
+    https://kb.10xgenomics.com/hc/en-us/articles/115003822406-How-does-Cell-Ranger-correct-barcode-sequencing-errors
+
     """
     # Check number of sequences and their lengths match with provided qualities
     if len(sequences) != len(qualities):

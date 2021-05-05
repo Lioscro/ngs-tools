@@ -1,6 +1,7 @@
 from typing import Any, Callable, Optional
 
 import pysam
+from tqdm import tqdm
 
 from .fastq import Fastq, Read
 
@@ -19,7 +20,8 @@ def map_bam(
     """
     with pysam.AlignmentFile(bam_path, 'rb', threads=n_threads,
                              check_sq=False) as f:
-        for read in f.fetch(until_eof=True):
+        for read in tqdm(f.fetch(until_eof=True), desc='Mapping BAM',
+                         smoothing=0):
             yield map_func(read)
 
 
@@ -37,7 +39,8 @@ def apply_bam(
                              check_sq=False) as f_in:
         with pysam.AlignmentFile(out_path, 'wb', template=f_in,
                                  threads=n_threads) as f_out:
-            for read in f_in.fetch(until_eof=True):
+            for read in tqdm(f_in.fetch(until_eof=True), desc='Applying BAM',
+                             smoothing=0):
                 result = apply_func(read)
                 if result is not None:
                     f_out.write(result)

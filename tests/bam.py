@@ -1,14 +1,25 @@
 import os
-from unittest import TestCase
+from unittest import mock, TestCase
 
 import pysam
 
 from ngsutils import bam
 
-from tests.mixins import TestMixin
+from tests.mixins import TestMixin, tqdm_mock
 
 
 class TestBam(TestMixin, TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestBam, cls).setUpClass()
+        cls.tqdm_patch = mock.patch('ngsutils.bam.tqdm', tqdm_mock)
+        cls.tqdm_patch.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestBam, cls).tearDownClass()
+        cls.tqdm_patch.stop()
 
     def test_map_bam(self):
         self.assertEqual([
