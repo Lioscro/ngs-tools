@@ -68,8 +68,8 @@ class Read:
 
     @property
     def extras(self):
-        return self.header[self.header.
-                           index(' '):] if ' ' in self.header else ''
+        return self.header[self.header.index(' ') +
+                           1:] if ' ' in self.header else ''
 
 
 class Fastq:
@@ -81,9 +81,13 @@ class Fastq:
         self.path = path
         self.mode = mode
         self.fp = None
+        self.closed = False
 
         # Immediately open file descriptor
         self._open()
+
+    def __del__(self):
+        self.close()
 
     @property
     def is_gzip(self):
@@ -98,6 +102,10 @@ class Fastq:
             if self.is_gzip else open(self.path, self.mode)
         )
 
+    def close(self):
+        self.closed = True
+        self.fp.close()
+
     def reset(self):
         """Reset the internal file descriptor to the beginning of the file.
         """
@@ -108,6 +116,8 @@ class Fastq:
         """
         if self.mode != 'r':
             raise FastqError(f'Can not read from file in mode `{self.mode}`')
+        if self.closed:
+            raise FastqError('Can not read from closed file')
 
         header, sequence, _, qualities = [next(self.fp) for _ in range(4)]
         return Read(header, sequence, qualities)
@@ -117,6 +127,8 @@ class Fastq:
         """
         if self.mode != 'w':
             raise FastqError(f'Can not write to file in mode `{self.mode}`')
+        if self.closed:
+            raise FastqError('Can not write to closed file')
 
         self.fp.write(f'{read.header}\n')
         self.fp.write(f'{read.sequence}\n')
@@ -157,7 +169,7 @@ def fastq_to_bam(
     })
     with pysam.AlignmentFile(bam_path, 'wb', header=header,
                              threads=n_threads) as f:
-        for read in tqdm(fastq.reads()):
+        for read in tqdm(fastq.reads(), smoothing=0, desc='Writing BAM'):
             al = pysam.AlignedSegment(header)
             al.query_name = read.name
             al.query_sequence = read.sequence

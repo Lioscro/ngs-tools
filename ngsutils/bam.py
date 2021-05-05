@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 import pysam
 
@@ -7,6 +7,20 @@ from .fastq import Fastq, Read
 
 class BamError(Exception):
     pass
+
+
+def map_bam(
+    bam_path: str,
+    map_func: Callable[[pysam.AlignedSegment], Any],
+    n_threads: int = 1
+):
+    """Generator to map an arbitrary function to every read and return a list of
+    return values.
+    """
+    with pysam.AlignmentFile(bam_path, 'rb', threads=n_threads,
+                             check_sq=False) as f:
+        for read in f.fetch(until_eof=True):
+            yield map_func(read)
 
 
 def apply_bam(
@@ -26,7 +40,7 @@ def apply_bam(
             for read in f_in.fetch(until_eof=True):
                 result = apply_func(read)
                 if result is not None:
-                    f_out.write(read)
+                    f_out.write(result)
 
 
 def tag_bam_with_fastq(
