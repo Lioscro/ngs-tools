@@ -56,7 +56,11 @@ def tag_bam_with_fastq(
 ):
     """Add tags to BAM entries using sequences from a FASTQ file.
     """
-    tags = {read.name: tag_func(read) for read in Fastq(fastq_path).reads()}
+    tags = {
+        read.name: tag_func(read)
+        for read in
+        tqdm(Fastq(fastq_path).reads(), smoothing=0, desc='Extracting tags')
+    }
 
     def apply_func(al: pysam.AlignedSegment):
         if al.query_name in tags:
