@@ -4,8 +4,15 @@ import tempfile
 from unittest import mock, TestCase
 
 
-def tqdm_mock(iterable, *args, **kwargs):
-    return iterable
+def tqdm_mock(*args, **kwargs):
+    if len(args) > 0:
+        iterable = args[0]
+        try:
+            iter(iterable)
+        except TypeError:
+            return mock.MagicMock()
+        return iterable
+    return mock.MagicMock()
 
 
 def dummy_function(*args, **kwargs):

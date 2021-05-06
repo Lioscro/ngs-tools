@@ -5,7 +5,7 @@ import numpy as np
 
 from ngsutils import sequence
 
-from tests.mixins import TestMixin, dummy_function
+from tests.mixins import TestMixin, tqdm_mock
 
 
 class TestSequence(TestMixin, TestCase):
@@ -66,8 +66,8 @@ class TestSequence(TestMixin, TestCase):
         sequences = ['ACTG', 'ACTT', 'AGCC', 'TTTT']
         qualities = ['AAAA', 'AAAA', 'AAAA', 'AAAA']
         whitelist = ['ACTG', 'TTTN']
-        with mock.patch('ngsutils.sequence.utils.tqdm', dummy_function),\
-            mock.patch('ngsutils.sequence.tqdm', dummy_function):
+        with mock.patch('ngsutils.sequence.utils.tqdm', tqdm_mock),\
+            mock.patch('ngsutils.sequence.tqdm', tqdm_mock):
             corrections = sequence.correct_sequences_to_whitelist(
                 sequences, qualities, whitelist
             )

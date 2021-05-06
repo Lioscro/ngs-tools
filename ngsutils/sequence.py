@@ -427,22 +427,33 @@ def correct_sequences_to_whitelist(
             'all sequences in `sequences` and `whitelist` must be of same length'
         )
 
-    # Step 1: find any sequences that are exact matches of the whitelist
+    # Step 1: any exact matches (ignoring ambiguities) can be assigned Immediately
     counts = Counter(sequences)
-    unique_sequences = sorted(counts.keys())
+    whitelist_counts = np.zeros(len(whitelist), dtype=float)
+    whitelist_indices = {bc: i for i, bc in enumerate(whitelist)}
+    unmatched_sequences = []
+    matches = {}
+    for seq in tqdm(list(counts.keys()), desc='[1/3] Finding exact matches',
+                    smoothing=0):
+        if seq in whitelist_indices:
+            matches[seq] = seq
+            whitelist_counts[whitelist_indices[seq]] += counts[seq]
+        else:
+            unmatched_sequences.append(seq)
+
+    # Step 2: Find all mismatch masks for which hamming distance <= d
     whitelist_arrays = np.array([_sequence_to_array(bc) for bc in whitelist])
     mismatch_cache = {}
-    whitelist_counts = np.zeros(len(whitelist), dtype=int)
-    matches = {}
     corrections = [None] * len(sequences)
     for i, (indices, masks) in enumerate(utils.ParallelWithProgress(
-            n_jobs=n_threads, total=len(unique_sequences),
-            desc='[1/2] Constructing mismatch masks'
-    )(delayed(_mismatch_masks)(_sequence_to_array(seq), whitelist_arrays, d=d)
-      for seq in unique_sequences)):
+            n_jobs=n_threads, total=len(unmatched_sequences),
+            desc='[2/3] Finding mismatches')(delayed(_mismatch_masks)(
+                _sequence_to_array(seq), whitelist_arrays, d=d)
+                                             for seq in unmatched_sequences)):
         indices = np.array(indices, dtype=int)
         masks = np.array(masks, dtype=bool)
-        mismatch_cache[unique_sequences[i]] = (indices, masks)
+        seq = unmatched_sequences[i]
+        mismatch_cache[seq] = (indices, masks)
 
         if indices.shape[0] == 0:
             continue
@@ -451,11 +462,12 @@ def correct_sequences_to_whitelist(
         # don't add the count to the whitelisted count.
         match_indices = indices[masks.sum(axis=1) == 0]
         if len(match_indices) == 1:
-            matches[unique_sequences[i]] = whitelist[match_indices[0]]
-        for i in match_indices:
-            whitelist_counts[i] += counts[whitelist[i]] / len(match_indices)
+            matches[seq] = whitelist[match_indices[0]]
+        if len(match_indices) > 0:
+            whitelist_counts[match_indices] += counts[seq] / len(match_indices)
+
     progress = tqdm(
-        total=len(sequences), desc='[2/2] Correcting sequences', smoothing=0
+        total=len(sequences), desc='[3/3] Correcting sequences', smoothing=0
     )
     for i, sequence in enumerate(sequences):
         if sequence in matches:
@@ -468,7 +480,7 @@ def correct_sequences_to_whitelist(
         (whitelist_counts + 1) / whitelist_pseudo
     )
 
-    # Step 2: correct all other sequences to whitelist
+    # Step 3: correct all other sequences to whitelist
     confidence = np.log10(confidence)
     for i, seq in enumerate(sequences):
         if corrections[i] is not None:
