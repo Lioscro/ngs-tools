@@ -59,7 +59,7 @@ def tag_bam_with_fastq(
     tags = {
         read.name: tag_func(read)
         for read in
-        tqdm(Fastq(fastq_path).reads(), smoothing=0, desc='Extracting tags')
+        tqdm(Fastq(fastq_path), smoothing=0, desc='Extracting tags')
     }
 
     def apply_func(al: pysam.AlignedSegment):

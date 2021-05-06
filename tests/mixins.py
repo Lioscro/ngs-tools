@@ -31,6 +31,10 @@ class TestMixin(TestCase):
     def setUpClass(cls):
         cls.base_dir = os.path.dirname(os.path.abspath(__file__))
         cls.fixtures_dir = os.path.join(cls.base_dir, 'fixtures')
+
+        cls.fasta_dir = os.path.join(cls.fixtures_dir, 'fasta')
+        cls.fasta_path = os.path.join(cls.fasta_dir, 'small.fa')
+
         cls.fastq_dir = os.path.join(cls.fixtures_dir, 'fastq')
         cls.fastq_path = os.path.join(cls.fastq_dir, 'small.fastq')
         cls.fastq2_path = os.path.join(cls.fastq_dir, 'small2.fastq')
@@ -42,3 +46,6 @@ class TestMixin(TestCase):
         cls.sequence_dir = os.path.join(cls.fixtures_dir, 'sequence')
         cls.sequences_path = os.path.join(cls.sequence_dir, 'sequences.txt')
         cls.qualities_path = os.path.join(cls.sequence_dir, 'qualities.txt')
+
+        cls.gtf_dir = os.path.join(cls.fixtures_dir, 'gtf')
+        cls.gtf_path = os.path.join(cls.gtf_dir, 'not_sorted.gtf')

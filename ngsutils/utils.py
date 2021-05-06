@@ -1,3 +1,8 @@
+import gzip
+import os
+from abc import abstractmethod
+from typing import Literal, Optional
+
 from joblib import Parallel
 from tqdm import tqdm
 
@@ -7,7 +12,14 @@ class ParallelWithProgress(Parallel):
     Taken from https://stackoverflow.com/a/61900501
     """
 
-    def __init__(self, use_tqdm=True, total=None, desc=None, *args, **kwargs):
+    def __init__(
+        self,
+        use_tqdm: bool = True,
+        total: Optional[int] = None,
+        desc: Optional[str] = None,
+        *args,
+        **kwargs
+    ):
         self._use_tqdm = use_tqdm
         self._total = total
         self._desc = desc
@@ -23,7 +35,65 @@ class ParallelWithProgress(Parallel):
         self._pbar.refresh()
 
 
-def is_gzip(path):
-    magic = b'\x1f\x8b'
-    with open(path, 'rb') as f:
-        return magic == f.read(len(magic))
+def is_gzip(path: str):
+    if os.path.isfile(path):
+        magic = b'\x1f\x8b'
+        with open(path, 'rb') as f:
+            return magic == f.read(len(magic))
+    else:
+        return path.endswith('.gz')
+
+
+def open_as_text(path: str, mode: Literal['r', 'w']):
+    return gzip.open(path, f'{mode}t') if is_gzip(path) else open(path, mode)
+
+
+class FileWrapper:
+
+    def __init__(self, path: str, mode: Literal['r', 'w'] = 'r'):
+        self.path = path
+        self.mode = mode
+        self.fp = None
+        self.closed = False
+
+        # Immediately open file descriptor
+        self._open()
+
+    @property
+    def is_gzip(self):
+        return is_gzip(self.path)
+
+    def __del__(self):
+        if not self.closed:
+            self.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self.close()
+
+    def __iter__(self):
+        while True:
+            try:
+                yield self.read()
+            except StopIteration:
+                return
+
+    def _open(self):
+        self.fp = open_as_text(self.path, self.mode)
+
+    def close(self):
+        self.closed = True
+        self.fp.close()
+
+    def reset(self):
+        self.fp.seek(0)
+
+    @abstractmethod
+    def read(self):
+        pass
+
+    @abstractmethod
+    def write(self, entry):
+        pass

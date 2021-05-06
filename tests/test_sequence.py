@@ -5,10 +5,10 @@ import numpy as np
 
 from ngsutils import sequence
 
-from tests.mixins import TestMixin, tqdm_mock
+from . import mixins
 
 
-class TestSequence(TestMixin, TestCase):
+class TestSequence(mixins.TestMixin, TestCase):
 
     def test_call_consensus_with_qualities(self):
         with open(self.sequences_path, 'r') as f1, open(self.qualities_path,
@@ -66,8 +66,8 @@ class TestSequence(TestMixin, TestCase):
         sequences = ['ACTG', 'ACTT', 'AGCC', 'TTTT']
         qualities = ['AAAA', 'AAAA', 'AAAA', 'AAAA']
         whitelist = ['ACTG', 'TTTN']
-        with mock.patch('ngsutils.sequence.utils.tqdm', tqdm_mock),\
-            mock.patch('ngsutils.sequence.tqdm', tqdm_mock):
+        with mock.patch('ngsutils.sequence.utils.tqdm', mixins.tqdm_mock),\
+            mock.patch('ngsutils.sequence.tqdm', mixins.tqdm_mock):
             corrections = sequence.correct_sequences_to_whitelist(
                 sequences, qualities, whitelist
             )

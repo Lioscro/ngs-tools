@@ -5,50 +5,50 @@ import pysam
 
 from ngsutils import fastq
 
-from tests.mixins import TestMixin, tqdm_mock
+from . import mixins
 
 
-class TestFastq(TestMixin, TestCase):
+class TestFastq(mixins.TestMixin, TestCase):
 
-    def test_fastq_read(self):
+    def test_read(self):
         fq = fastq.Fastq(self.fastq_path, 'r')
-        reads = list(fq.reads())
+        reads = list(fq)
         self.assertEqual(2, len(reads))
 
         self.assertEqual('@read1 extra tags', reads[0].header)
         self.assertEqual('read1', reads[0].name)
-        self.assertEqual('extra tags', reads[0].extras)
+        self.assertEqual('extra tags', reads[0].attributes)
         self.assertEqual('ACTG', reads[0].sequence)
         self.assertEqual('AAAB', reads[0].qualities.string)
         self.assertEqual([32, 32, 32, 33], reads[0].qualities.values)
 
         self.assertEqual('@read2 extra tags2', reads[1].header)
         self.assertEqual('read2', reads[1].name)
-        self.assertEqual('extra tags2', reads[1].extras)
+        self.assertEqual('extra tags2', reads[1].attributes)
         self.assertEqual('AAGT', reads[1].sequence)
         self.assertEqual('///!', reads[1].qualities.string)
         self.assertEqual([14, 14, 14, 0], reads[1].qualities.values)
 
-    def test_fastq_gz_read(self):
+    def test_gz_read(self):
         fq = fastq.Fastq(self.fastq_gz_path, 'r')
-        reads = list(fq.reads())
+        reads = list(fq)
         self.assertEqual(2, len(reads))
 
         self.assertEqual('@read1 extra tags', reads[0].header)
         self.assertEqual('read1', reads[0].name)
-        self.assertEqual('extra tags', reads[0].extras)
+        self.assertEqual('extra tags', reads[0].attributes)
         self.assertEqual('ACTG', reads[0].sequence)
         self.assertEqual('AAAB', reads[0].qualities.string)
         self.assertEqual([32, 32, 32, 33], reads[0].qualities.values)
 
         self.assertEqual('@read2 extra tags2', reads[1].header)
         self.assertEqual('read2', reads[1].name)
-        self.assertEqual('extra tags2', reads[1].extras)
+        self.assertEqual('extra tags2', reads[1].attributes)
         self.assertEqual('AAGT', reads[1].sequence)
         self.assertEqual('///!', reads[1].qualities.string)
         self.assertEqual([14, 14, 14, 0], reads[1].qualities.values)
 
-    def test_fastq_write(self):
+    def test_write(self):
         path = os.path.join(self.temp_dir, 'test.fastq')
         fq = fastq.Fastq(path, 'w')
         fq.write(fastq.Read('@header', 'ACTG', '////'))
@@ -58,7 +58,7 @@ class TestFastq(TestMixin, TestCase):
 
     def test_fastq_to_bam(self):
         path = os.path.join(self.temp_dir, 'test.bam')
-        with mock.patch('ngsutils.fastq.tqdm', tqdm_mock):
+        with mock.patch('ngsutils.fastq.tqdm', mixins.tqdm_mock):
             fastq.fastq_to_bam(self.fastq_path, path, 'read_group')
 
         with pysam.AlignmentFile(path, 'rb', check_sq=False) as f:

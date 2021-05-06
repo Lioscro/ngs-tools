@@ -6,12 +6,15 @@ import numpy as np
 import pysam
 from joblib import delayed
 from numba import njit
+from pyseq_align import NeedlemanWunsch
 from tqdm import tqdm
 
 from . import utils
 
 NUCLEOTIDES_STRICT = ['A', 'C', 'G', 'T']
-NUCLEOTIDES_PERMISSIVE = ['R', 'Y', 'S', 'W', 'K', 'M', 'B', 'D', 'H', 'V', 'N']
+NUCLEOTIDES_PERMISSIVE = [
+    'R', 'Y', 'S', 'W', 'K', 'M', 'B', 'D', 'H', 'V', 'N', '-'
+]
 NUCLEOTIDES = NUCLEOTIDES_STRICT + NUCLEOTIDES_PERMISSIVE
 NUCLEOTIDES_AMBIGUOUS = {
     'N': ('A', 'C', 'G', 'T'),
@@ -25,6 +28,7 @@ NUCLEOTIDES_AMBIGUOUS = {
     'D': ('A', 'G', 'T'),
     'H': ('A', 'C', 'T'),
     'V': ('A', 'C', 'G'),
+    '-': tuple(),
 }
 NUCLEOTIDE_COMPLEMENT = {
     'A': 'T',
@@ -50,10 +54,30 @@ NUCLEOTIDE_MASKS = {
                 dtype=bool)
     for n in NUCLEOTIDES
 }
+LEVENSHTEIN_DISTANCE_ALIGNER = NeedlemanWunsch(
+    gap_open=0,
+    gap_extend=-1,
+    substitution_matrix={
+        n: {
+            _n: int((NUCLEOTIDE_MASKS[n] & NUCLEOTIDE_MASKS[_n]).any()) - 1
+            for _n in NUCLEOTIDES
+        }
+        for n in NUCLEOTIDES
+    }
+)
 
 
 class SequenceError(Exception):
     pass
+
+
+def complement_sequence(sequence: str, reverse: bool = False):
+    """Complement the given sequence, with optional reversing.
+    """
+    sequence = sequence.upper()
+    if reverse:
+        sequence = reversed(sequence)
+    return ''.join(NUCLEOTIDE_COMPLEMENT[c] for c in sequence)
 
 
 def _sequence_to_array(
@@ -89,7 +113,7 @@ def _qualities_to_array(
 
 
 def _most_likely_sequence(positional_probs: np.ndarray) -> str:
-    # TODO: deal with ties
+    # TODO: deal with ties?
     indices = positional_probs.argmax(axis=0)
     return ''.join(NUCLEOTIDES_STRICT[i] for i in indices)
 
@@ -236,6 +260,19 @@ def call_consensus_with_qualities(
         return consensuses, assignments, consensuses_qualities
     else:
         return consensuses, assignments
+
+
+def levenshtein_distance(sequence1: str, sequence2: str) -> int:
+    return -LEVENSHTEIN_DISTANCE_ALIGNER.align(sequence1, sequence2).score
+
+
+def _levenshtein_alignment(
+        sequence1: str, sequence2: str
+) -> Tuple[np.ndarray, np.ndarray, int]:
+    align = LEVENSHTEIN_DISTANCE_ALIGNER.align(sequence1, sequence2)
+    return _sequence_to_array(align.result_a), _sequence_to_array(
+        align.result_b
+    ), -align.score
 
 
 @njit
@@ -493,5 +530,6 @@ def correct_sequences_to_whitelist(
         if best_bc >= 0 and log10_confidence >= confidence:
             corrections[i] = whitelist[best_bc]
         progress.update(1)
+        progress.refresh()
 
     return corrections
