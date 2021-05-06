@@ -1,7 +1,7 @@
 import os
 from unittest import TestCase
 
-from ngsutils import gtf
+from ngs_utils import gtf
 
 from . import mixins
 

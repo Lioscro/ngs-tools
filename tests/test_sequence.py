@@ -3,7 +3,7 @@ from unittest import mock, TestCase
 
 import numpy as np
 
-from ngsutils import sequence
+from ngs_utils import sequence
 
 from . import mixins
 
@@ -66,8 +66,8 @@ class TestSequence(mixins.TestMixin, TestCase):
         sequences = ['ACTG', 'ACTT', 'AGCC', 'TTTT']
         qualities = ['AAAA', 'AAAA', 'AAAA', 'AAAA']
         whitelist = ['ACTG', 'TTTN']
-        with mock.patch('ngsutils.sequence.utils.tqdm', mixins.tqdm_mock),\
-            mock.patch('ngsutils.sequence.tqdm', mixins.tqdm_mock):
+        with mock.patch('ngs_utils.sequence.utils.tqdm', mixins.tqdm_mock),\
+            mock.patch('ngs_utils.sequence.tqdm', mixins.tqdm_mock):
             corrections = sequence.correct_sequences_to_whitelist(
                 sequences, qualities, whitelist
             )

@@ -9,9 +9,9 @@ def read(path):
 long_description = read('README.md')
 
 setup(
-    name='ngsutils',
+    name='ngs_utils',
     version='0.0.0',
-    url='https://github.com/Lioscro/ngsutils',
+    url='https://github.com/Lioscro/ngs_utils',
     author='Kyung Hoi (Joseph) Min',
     author_email='phoenixter96@gmail.com',
     description='',  # noqa

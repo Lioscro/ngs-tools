@@ -2,11 +2,11 @@
 
 test:
 	rm -f .coverage
-	nosetests --verbose --with-coverage --cover-package ngsutils tests/*
+	nosetests --verbose --with-coverage --cover-package ngs_utils tests/*
 
 check:
-	flake8 ngsutils && echo OK
-	yapf -r --diff ngsutils && echo OK
+	flake8 ngs_utils && echo OK
+	yapf -r --diff ngs_utils && echo OK
 
 build:
 	python setup.py sdist bdist_wheel
@@ -17,7 +17,7 @@ docs:
 clean:
 	rm -rf build
 	rm -rf dist
-	rm -rf ngsutils.egg-info
+	rm -rf ngs_utils.egg-info
 	rm -rf docs/_build
 	rm -rf docs/api
 	rm -rf .coverage
