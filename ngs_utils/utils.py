@@ -47,6 +47,9 @@ def is_gzip(path: str):
 def open_as_text(path: str, mode: Literal['r', 'w']):
     return gzip.open(path, f'{mode}t') if is_gzip(path) else open(path, mode)
 
+def all_exists(*paths):
+    return all(os.path.exists(path) for path in paths)
+
 
 class FileWrapper:
 
@@ -64,8 +67,7 @@ class FileWrapper:
         return is_gzip(self.path)
 
     def __del__(self):
-        if not self.closed:
-            self.close()
+        self.close()
 
     def __enter__(self):
         return self
@@ -84,11 +86,14 @@ class FileWrapper:
         self.fp = open_as_text(self.path, self.mode)
 
     def close(self):
-        self.closed = True
-        self.fp.close()
+        if not self.fp.closed:
+            self.fp.close()
 
     def reset(self):
-        self.fp.seek(0)
+        self.close()
+        self.__init__(self.path, self.mode)
+
+    def tell(self): return self.fp.tell()
 
     @abstractmethod
     def read(self):

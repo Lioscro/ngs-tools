@@ -1,3 +1,4 @@
+import gzip
 import os
 import shutil
 import tempfile
@@ -18,6 +19,10 @@ def tqdm_mock(*args, **kwargs):
 def dummy_function(*args, **kwargs):
     return mock.MagicMock()
 
+def files_equal(file1, file2, gzipped=False):
+    open_f = gzip.open if gzipped else open
+    with open_f(file1, 'r') as f1, open_f(file2, 'r') as f2:
+        return f1.read() == f2.read()
 
 class TestMixin(TestCase):
 
@@ -34,6 +39,9 @@ class TestMixin(TestCase):
 
         cls.fasta_dir = os.path.join(cls.fixtures_dir, 'fasta')
         cls.fasta_path = os.path.join(cls.fasta_dir, 'small.fa')
+        cls.fasta2_path = os.path.join(cls.fasta_dir, 'not_sorted.fa')
+        cls.cdna_fasta_path = os.path.join(cls.fasta_dir, 'cdna.fa')
+        cls.intron_fasta_path = os.path.join(cls.fasta_dir, 'intron.fa')
 
         cls.fastq_dir = os.path.join(cls.fixtures_dir, 'fastq')
         cls.fastq_path = os.path.join(cls.fastq_dir, 'small.fastq')

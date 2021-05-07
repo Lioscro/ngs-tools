@@ -80,6 +80,9 @@ class Logger:
         """
         return f'[{self.namespace}] {message}'
 
+    def addHandler(self, *args, **kwargs):
+        return self.logger.addHandler(*args, **kwargs)
+
     def setLevel(self, *args, **kwargs):
         return self.logger.setLevel(*args, **kwargs)
 
@@ -115,3 +118,7 @@ class Logger:
 
 
 logger = Logger()
+
+def set_logger(log: Logger):
+    global logger
+    logger = log

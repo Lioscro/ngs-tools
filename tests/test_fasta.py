@@ -1,7 +1,7 @@
 import os
 from unittest import TestCase
 
-from ngs_utils import fasta
+from ngs_utils import fasta, gtf
 
 from . import mixins
 
@@ -33,3 +33,15 @@ class TestFasta(mixins.TestMixin, TestCase):
         fa.close()
         with open(path, 'r') as f:
             self.assertEqual('>header\nACTG\n', f.read())
+
+    def test_split_genomic_fasta_to_cdna(self):
+        path = os.path.join(self.temp_dir, 'test.fa')
+        gene_infos, transcript_infos = gtf.genes_and_transcripts_from_gtf(self.gtf_path, use_version=False)
+        fasta.split_genomic_fasta_to_cdna(self.fasta2_path, path, gene_infos, transcript_infos)
+        self.assertTrue(mixins.files_equal(self.cdna_fasta_path, path))
+
+    def test_split_genomic_fasta_to_intron(self):
+        path = os.path.join(self.temp_dir, 'test.fa')
+        gene_infos, transcript_infos = gtf.genes_and_transcripts_from_gtf(self.gtf_path, use_version=False)
+        fasta.split_genomic_fasta_to_intron(self.fasta2_path, path, gene_infos, transcript_infos, flank=1)
+        self.assertTrue(mixins.files_equal(self.intron_fasta_path, path))

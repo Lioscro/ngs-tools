@@ -1,4 +1,5 @@
 import array
+import re
 from collections import Counter
 from typing import List, Optional, Tuple, Union
 
@@ -65,6 +66,7 @@ LEVENSHTEIN_DISTANCE_ALIGNER = NeedlemanWunsch(
         for n in NUCLEOTIDES
     }
 )
+SEQUENCE_PARSER = re.compile(r'[^atcgATCG]')
 
 
 class SequenceError(Exception):
