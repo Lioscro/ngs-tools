@@ -102,7 +102,7 @@ class Fasta(utils.FileWrapper):
 
 
 def split_genomic_fasta_to_cdna(
-        fasta_path: str, out_path: str, gene_infos: dict, transcript_infos: dict
+    fasta_path: str, out_path: str, gene_infos: dict, transcript_infos: dict
 ) -> str:
     """Split a genomic FASTA into cDNA by using gene and transcript information
     generated from extracting information from a GTF.
@@ -154,11 +154,11 @@ def split_genomic_fasta_to_cdna(
 
 
 def split_genomic_fasta_to_intron(
-        fasta_path: str,
-        out_path: str,
-        gene_infos: dict,
-        transcript_infos: dict,
-        flank: int = 30
+    fasta_path: str,
+    out_path: str,
+    gene_infos: dict,
+    transcript_infos: dict,
+    flank: int = 30
 ) -> str:
     """Split a genomic FASTA into introns by using gene and transcript information
     generated from extracting information from a GTF.

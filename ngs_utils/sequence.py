@@ -83,8 +83,8 @@ def complement_sequence(sequence: str, reverse: bool = False):
 
 
 def _sequence_to_array(
-        sequence: str,
-        l: Optional[int] = None  # noqa: E741
+    sequence: str,
+    l: Optional[int] = None  # noqa: E741
 ) -> np.ndarray:  # noqa: E741
     sequence = sequence.upper()
     for c in sequence:
@@ -98,8 +98,8 @@ def _sequence_to_array(
 
 
 def _qualities_to_array(
-        qualities: Union[str, array.array],
-        l: Optional[int] = None  # noqa: E741
+    qualities: Union[str, array.array],
+    l: Optional[int] = None  # noqa: E741
 ) -> np.ndarray:
     if l and l < len(qualities):
         raise SequenceError('`l` can not be smaller than length of `qualities`')
@@ -133,7 +133,7 @@ def _disambiguate_sequence(sequence: np.ndarray) -> List[str]:
 
 
 def _calculate_positional_probs(
-        sequences: np.ndarray, qualities: np.ndarray
+    sequences: np.ndarray, qualities: np.ndarray
 ) -> np.ndarray:
     positional_probs = np.zeros(sequences[0].shape, dtype=int)
     for seq, qual in zip(sequences, qualities):
@@ -269,7 +269,7 @@ def levenshtein_distance(sequence1: str, sequence2: str) -> int:
 
 
 def _levenshtein_alignment(
-        sequence1: str, sequence2: str
+    sequence1: str, sequence2: str
 ) -> Tuple[np.ndarray, np.ndarray, int]:
     align = LEVENSHTEIN_DISTANCE_ALIGNER.align(sequence1, sequence2)
     return _sequence_to_array(align.result_a), _sequence_to_array(
@@ -289,7 +289,7 @@ def _mismatch_mask(sequence1: np.ndarray, sequence2: np.ndarray) -> int:
 
 @njit
 def _mismatch_masks(
-        sequence: np.ndarray, whitelist: np.ndarray, d: int
+    sequence: np.ndarray, whitelist: np.ndarray, d: int
 ) -> np.ndarray:
     indices = []
     masks = []
@@ -320,7 +320,7 @@ def hamming_distance(sequence1: str, sequence2: str) -> int:
 
 @njit
 def _hamming_distances(
-        sequence: np.ndarray, sequences: np.ndarray
+    sequence: np.ndarray, sequences: np.ndarray
 ) -> np.ndarray:
     distances = np.zeros(sequences.shape[0], dtype=np.uint)
     for i, seq in enumerate(sequences):
@@ -341,7 +341,7 @@ def hamming_distances(sequence: str, sequences: List[str]) -> np.ndarray:
 
 @njit
 def _hamming_distance_matrix(
-        sequences1: np.ndarray, sequences2: np.ndarray
+    sequences1: np.ndarray, sequences2: np.ndarray
 ) -> np.ndarray:
     distances = np.zeros((sequences1.shape[0], sequences2.shape[0]),
                          dtype=np.uint)
@@ -351,7 +351,7 @@ def _hamming_distance_matrix(
 
 
 def hamming_distance_matrix(
-        sequences1: List[str], sequences2: List[str]
+    sequences1: List[str], sequences2: List[str]
 ) -> np.ndarray:
     """Calculate all pairwise hamming distances between two lists of sequences.
     """
@@ -392,10 +392,10 @@ def pairwise_hamming_distances(sequences: List[str]) -> np.ndarray:
 
 @njit
 def _correct_to_whitelist(
-        qualities: np.ndarray,
-        indices: np.ndarray,
-        masks: np.ndarray,
-        log10_proportions: np.ndarray,
+    qualities: np.ndarray,
+    indices: np.ndarray,
+    masks: np.ndarray,
+    log10_proportions: np.ndarray,
 ) -> Tuple[int, float]:
     best_bc = -1
     max_log10_likelihood = -np.inf
@@ -418,12 +418,12 @@ def _correct_to_whitelist(
 
 
 def correct_sequences_to_whitelist(
-        sequences: List[str],
-        qualities: Union[List[str], List[array.array]],
-        whitelist: List[str],
-        d: int = 1,
-        confidence: float = 0.9,
-        n_threads: int = 1
+    sequences: List[str],
+    qualities: Union[List[str], List[array.array]],
+    whitelist: List[str],
+    d: int = 1,
+    confidence: float = 0.9,
+    n_threads: int = 1
 ) -> List[Union[str, None]]:
     """Correct a list of sequences to a whitelist within `d` hamming distance.
     Note that `sequences` can contain duplicates, but `whitelist` can not.
