@@ -10,7 +10,7 @@ long_description = read('README.md')
 
 setup(
     name='ngs_utils',
-    version='0.0.0',
+    version='1.0.0',
     url='https://github.com/Lioscro/ngs_utils',
     author='Kyung Hoi (Joseph) Min',
     author_email='phoenixter96@gmail.com',
