@@ -9,7 +9,7 @@ def read(path):
 long_description = read('README.md')
 
 setup(
-    name='ngs_utils',
+    name='ngs-utils',
     version='1.0.0',
     url='https://github.com/Lioscro/ngs_utils',
     author='Kyung Hoi (Joseph) Min',
