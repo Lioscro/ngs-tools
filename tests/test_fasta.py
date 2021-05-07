@@ -1,7 +1,7 @@
 import os
 from unittest import TestCase
 
-from ngs_utils import fasta, gtf
+from ngs_tools import fasta, gtf
 
 from . import mixins
 

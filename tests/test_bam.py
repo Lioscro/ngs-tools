@@ -3,7 +3,7 @@ from unittest import mock, TestCase
 
 import pysam
 
-from ngs_utils import bam
+from ngs_tools import bam
 
 from tests.mixins import TestMixin, tqdm_mock
 
@@ -13,7 +13,7 @@ class TestBam(TestMixin, TestCase):
     @classmethod
     def setUpClass(cls):
         super(TestBam, cls).setUpClass()
-        cls.tqdm_patch = mock.patch('ngs_utils.bam.tqdm', tqdm_mock)
+        cls.tqdm_patch = mock.patch('ngs_tools.bam.tqdm', tqdm_mock)
         cls.tqdm_patch.start()
 
     @classmethod

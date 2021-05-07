@@ -9,12 +9,12 @@ def read(path):
 long_description = read('README.md')
 
 setup(
-    name='ngs-utils',
+    name='ngs-tools',
     version='1.0.1',
-    url='https://github.com/Lioscro/ngs_utils',
+    url='https://github.com/Lioscro/ngs_tools',
     author='Kyung Hoi (Joseph) Min',
     author_email='phoenixter96@gmail.com',
-    description='',  # noqa
+    description='Tools for working with next-generation sequencing (NGS) data',  # noqa
     long_description=long_description,
     long_description_content_type='text/markdown',
     keywords='',

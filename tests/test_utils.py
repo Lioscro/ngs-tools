@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from joblib import delayed
 
-from ngs_utils import utils
+from ngs_tools import utils
 
 from . import mixins
 

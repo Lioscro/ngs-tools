@@ -3,7 +3,7 @@ from unittest import mock, TestCase
 
 import pysam
 
-from ngs_utils import fastq
+from ngs_tools import fastq
 
 from . import mixins
 
@@ -58,7 +58,7 @@ class TestFastq(mixins.TestMixin, TestCase):
 
     def test_fastq_to_bam(self):
         path = os.path.join(self.temp_dir, 'test.bam')
-        with mock.patch('ngs_utils.fastq.tqdm', mixins.tqdm_mock):
+        with mock.patch('ngs_tools.fastq.tqdm', mixins.tqdm_mock):
             fastq.fastq_to_bam(self.fastq_path, path, 'read_group')
 
         with pysam.AlignmentFile(path, 'rb', check_sq=False) as f:
