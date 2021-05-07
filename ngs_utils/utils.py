@@ -1,7 +1,7 @@
 import gzip
 import os
 from abc import abstractmethod
-from typing import Literal, Optional
+from typing import Optional
 
 from joblib import Parallel
 from tqdm import tqdm
@@ -44,7 +44,7 @@ def is_gzip(path: str):
         return path.endswith('.gz')
 
 
-def open_as_text(path: str, mode: Literal['r', 'w']):
+def open_as_text(path: str, mode: str):
     return gzip.open(path, f'{mode}t') if is_gzip(path) else open(path, mode)
 
 
@@ -54,7 +54,7 @@ def all_exists(*paths):
 
 class FileWrapper:
 
-    def __init__(self, path: str, mode: Literal['r', 'w'] = 'r'):
+    def __init__(self, path: str, mode: str = 'r'):
         self.path = path
         self.mode = mode
         self.fp = None

@@ -1,5 +1,4 @@
 import re
-from typing import Literal
 
 from . import sequence, utils
 from .logging import logger
@@ -61,7 +60,7 @@ class Fasta(utils.FileWrapper):
     PARSER = re.compile(r'^>(?P<sequence_id>\S+)(?P<group>.*)')
     GROUP_PARSER = re.compile(r'(?P<key>\S+?):(?P<value>\S+)')
 
-    def __init__(self, path: str, mode: Literal['r', 'w'] = 'r'):
+    def __init__(self, path: str, mode: str = 'r'):
         super(Fasta, self).__init__(path, mode)
 
         # Cache for next header is needed to implement read() properly.
