@@ -39,7 +39,9 @@ class TestGtf(mixins.TestMixin, TestCase):
             self.assertEqual(f'{line}\n', f.read())
 
     def test_genes_and_transcripts_from_gtf(self):
-        gene_infos, transcript_infos = gtf.genes_and_transcripts_from_gtf(self.gtf_path)
+        gene_infos, transcript_infos = gtf.genes_and_transcripts_from_gtf(
+            self.gtf_path
+        )
         self.assertEqual({
             'GENE_D': {
                 'transcripts': ['GENE_D'],
@@ -79,20 +81,37 @@ class TestGtf(mixins.TestMixin, TestCase):
                 'introns': gtf.SegmentCollection()
             },
             'TRANSCRIPT_C': {
-                'gene_id': 'GENE_C',
-                'transcript_name': '4933401J01Rik-201',
-                'segment': gtf.Segment(1, 14),
-                'exons': gtf.SegmentCollection([gtf.Segment(1, 3), gtf.Segment(9, 14)]),
-                'introns': gtf.SegmentCollection([gtf.Segment(3, 9)])
+                'gene_id':
+                    'GENE_C',
+                'transcript_name':
+                    '4933401J01Rik-201',
+                'segment':
+                    gtf.Segment(1, 14),
+                'exons':
+                    gtf.SegmentCollection([
+                        gtf.Segment(1, 3),
+                        gtf.Segment(9, 14)
+                    ]),
+                'introns':
+                    gtf.SegmentCollection([gtf.Segment(3, 9)])
             },
             'TRANSCRIPT_B': {
-                'gene_id': 'GENE_B',
-                'transcript_name': '4933401J01Rik-201',
-                'segment': gtf.Segment(0, 10),
-                'exons': gtf.SegmentCollection([gtf.Segment(1, 2), gtf.Segment(4, 8)]),
-                'introns': gtf.SegmentCollection([gtf.Segment(0, 1),
-                                                  gtf.Segment(2, 4),
-                                                  gtf.Segment(8, 10)])
+                'gene_id':
+                    'GENE_B',
+                'transcript_name':
+                    '4933401J01Rik-201',
+                'segment':
+                    gtf.Segment(0, 10),
+                'exons':
+                    gtf.SegmentCollection([
+                        gtf.Segment(1, 2), gtf.Segment(4, 8)
+                    ]),
+                'introns':
+                    gtf.SegmentCollection([
+                        gtf.Segment(0, 1),
+                        gtf.Segment(2, 4),
+                        gtf.Segment(8, 10)
+                    ])
             },
             'TRANSCRIPT_A': {
                 'gene_id': 'GENE_A',
@@ -169,6 +188,7 @@ class TestSegment(mixins.TestMixin, TestCase):
         flanked = segment.flank(2, left=1, right=10)
         self.assertEqual(1, flanked.start)
         self.assertEqual(10, flanked.end)
+
 
 class TestSegmentCollection(mixins.TestMixin, TestCase):
 
@@ -282,7 +302,9 @@ class TestSegmentCollection(mixins.TestMixin, TestCase):
         segment1 = gtf.Segment(0, 10)
         segment2 = gtf.Segment(12, 15)
         segment3 = gtf.Segment(20, 25)
-        collection = gtf.SegmentCollection(segments=[segment1, segment2, segment3])
+        collection = gtf.SegmentCollection(
+            segments=[segment1, segment2, segment3]
+        )
         flanked = collection.flank(2)
         self.assertEqual(2, len(flanked))
         self.assertEqual(0, flanked[0].start)

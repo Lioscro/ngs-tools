@@ -61,8 +61,8 @@ class Read:
 
     @property
     def name(self):
-        return self.header[1:self.header.
-                           index(' ')] if ' ' in self.header else self.header[1:]
+        return self.header[1:self.header.index(' ')
+                           ] if ' ' in self.header else self.header[1:]
 
     @property
     def attributes(self):
@@ -83,7 +83,9 @@ class Fastq(utils.FileWrapper):
         if self.closed:
             raise FastqError('Can not read from closed file')
 
-        header, sequence, _, qualities = [next(self.fp).strip() for _ in range(4)]
+        header, sequence, _, qualities = [
+            next(self.fp).strip() for _ in range(4)
+        ]
         return Read(header, sequence, qualities)
 
     def write(self, entry: Read):

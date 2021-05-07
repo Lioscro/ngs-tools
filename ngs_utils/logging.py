@@ -119,6 +119,7 @@ class Logger:
 
 logger = Logger()
 
+
 def set_logger(log: Logger):
     global logger
     logger = log

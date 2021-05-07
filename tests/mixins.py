@@ -19,10 +19,12 @@ def tqdm_mock(*args, **kwargs):
 def dummy_function(*args, **kwargs):
     return mock.MagicMock()
 
+
 def files_equal(file1, file2, gzipped=False):
     open_f = gzip.open if gzipped else open
     with open_f(file1, 'r') as f1, open_f(file2, 'r') as f2:
         return f1.read() == f2.read()
+
 
 class TestMixin(TestCase):
 

@@ -47,6 +47,7 @@ def is_gzip(path: str):
 def open_as_text(path: str, mode: Literal['r', 'w']):
     return gzip.open(path, f'{mode}t') if is_gzip(path) else open(path, mode)
 
+
 def all_exists(*paths):
     return all(os.path.exists(path) for path in paths)
 
@@ -93,7 +94,8 @@ class FileWrapper:
         self.close()
         self.__init__(self.path, self.mode)
 
-    def tell(self): return self.fp.tell()
+    def tell(self):
+        return self.fp.tell()
 
     @abstractmethod
     def read(self):

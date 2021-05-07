@@ -6,7 +6,10 @@ from typing import Generator, Optional, Tuple
 from . import utils
 from .logging import logger
 
-class SegmentError(Exception): pass
+
+class SegmentError(Exception):
+    pass
+
 
 class Segment:
     """Class to represent an integer interval segment, zero-indexed.
@@ -51,7 +54,12 @@ class Segment:
     def is_superset(self, segment):
         return self.start <= segment.start and self.end >= segment.end
 
-    def flank(self, l: int, left: Optional[int] = None, right: Optional[int] = None):
+    def flank(
+        self,
+        l: int,  # noqa: E741
+        left: Optional[int] = None,
+        right: Optional[int] = None
+    ):
         left = left or 0
         right = right or self.end + l
         return Segment(max(left, self.start - l), min(self.end + l, right))
@@ -166,7 +174,12 @@ class SegmentCollection:
     def is_superset(self, collection):
         return collection.is_subset(self)
 
-    def flank(self, l: int, left: Optional[int] = None, right: Optional[int] = None):
+    def flank(
+        self,
+        l: int,  # noqa: E741
+        left: Optional[int] = None,
+        right: Optional[int] = None
+    ):
         segments = [segment.flank(l, left, right) for segment in self.segments]
         return SegmentCollection(segments)
 
@@ -304,7 +317,11 @@ class Gtf(utils.FileWrapper):
 
         self.fp.write(f'{entry.line}\n')
 
-def parse_gtf(gtf_path: str, features: list = ['exon', 'transcript', 'gene']) -> Generator[GtfEntry, None, None]:
+
+def parse_gtf(
+    gtf_path: str,
+    features: list = ['exon', 'transcript', 'gene']
+) -> Generator[GtfEntry, None, None]:
     """Parse GTF and yield only the specified features as GtfEntry's.
     """
     with Gtf(gtf_path, 'r') as f:
@@ -312,7 +329,10 @@ def parse_gtf(gtf_path: str, features: list = ['exon', 'transcript', 'gene']) ->
             if entry.feature in features:
                 yield entry
 
-def genes_and_transcripts_from_gtf(gtf_path: str, use_version: bool = False) -> Tuple[dict, dict]:
+
+def genes_and_transcripts_from_gtf(gtf_path: str,
+                                   use_version: bool = False
+                                   ) -> Tuple[dict, dict]:
     """Parse GTF for gene and transcript information.
     """
     gene_infos = {}
@@ -325,7 +345,9 @@ def genes_and_transcripts_from_gtf(gtf_path: str, use_version: bool = False) -> 
         attributes = entry.attributes
         gene_id = attributes.get('gene_id')
         if not gene_id:
-            logger.warning(f'Found feature `{entry.feature}` without `gene_id`. Ignoring.')
+            logger.warning(
+                f'Found feature `{entry.feature}` without `gene_id`. Ignoring.'
+            )
             continue
         if use_version:
             gene_version = attributes.get('gene_version')
@@ -335,7 +357,7 @@ def genes_and_transcripts_from_gtf(gtf_path: str, use_version: bool = False) -> 
 
         # Update gene info. If we have a gene feature, override instead
         formatted = {
-            'segment': Segment(entry.start-1, entry.end),
+            'segment': Segment(entry.start - 1, entry.end),
             'chromosome': entry.chromosome,
             'strand': entry.strand,
         }
@@ -345,7 +367,9 @@ def genes_and_transcripts_from_gtf(gtf_path: str, use_version: bool = False) -> 
                 gene_infos[gene_id]['transcripts'] = []
         gene_info = gene_infos.setdefault(gene_id, formatted)
         segment = gene_info['segment']
-        gene_info['segment'] = Segment(min(segment.start, entry.start-1), max(segment.end, entry.end))
+        gene_info['segment'] = Segment(
+            min(segment.start, entry.start - 1), max(segment.end, entry.end)
+        )
         gene_info['gene_name'] = gene_name or gene_info.get('gene_name', '')
         gene_info.setdefault('transcripts', [])
 
@@ -356,7 +380,9 @@ def genes_and_transcripts_from_gtf(gtf_path: str, use_version: bool = False) -> 
             # IMPORTANT: every transcript, exon feature must have transcript_id
             transcript_id = attributes.get('transcript_id')
             if not transcript_id:
-                logger.warning(f'Gene `{gene_id}` feature `{feature}` does not have a transcript_id. Ignoring.')
+                logger.warning(
+                    f'Gene `{gene_id}` feature `{entry.feature}` does not have a transcript_id. Ignoring.'
+                )
                 continue
             transcript_name = attributes.get('transcript_name', '')
             if use_version:
@@ -367,7 +393,8 @@ def genes_and_transcripts_from_gtf(gtf_path: str, use_version: bool = False) -> 
             # Check for duplicates and rename appropriately
             # The assumption is gene_id, transcript_id pairs MUST be unique
             # (i.e. there are no distinct transcripts with the same ID within a gene)
-            if gene_id != transcript_infos.get(transcript_id, {}).get('gene_id', gene_id):
+            if gene_id != transcript_infos.get(transcript_id, {}).get('gene_id',
+                                                                      gene_id):
                 logger.warning(
                     f'Transcript `{transcript_id}` is assigned to multiple genes. '
                     'All instances of this transcript will be renamed in the following format: '
@@ -378,11 +405,14 @@ def genes_and_transcripts_from_gtf(gtf_path: str, use_version: bool = False) -> 
                 # Retroactively rename previously parsed transcript_id
                 # Note that any transcript IDs that don't have an entry in transcript_infos
                 # will be removed in the next stage.
-                gene_infos[transcript_infos[transcript_id]['gene_id']]['transcripts'].append(_transcript_id)
-                transcript_infos[_transcript_id] = transcript_infos[transcript_id].copy()
+                gene_infos[transcript_infos[transcript_id]['gene_id']
+                           ]['transcripts'].append(_transcript_id)
+                transcript_infos[_transcript_id] = transcript_infos[
+                    transcript_id].copy()
                 del transcript_infos[transcript_id]
                 if transcript_id in transcript_exons:
-                    transcript_exons[_transcript_id] = transcript_exons[transcript_id].copy()
+                    transcript_exons[_transcript_id] = transcript_exons[
+                        transcript_id].copy()
                     del transcript_exons[transcript_id]
 
             if transcript_id in renamed:
@@ -391,21 +421,33 @@ def genes_and_transcripts_from_gtf(gtf_path: str, use_version: bool = False) -> 
             gene_info['transcripts'].append(transcript_id)
             formatted = {
                 'gene_id': gene_id,
-                'segment': Segment(entry.start-1, entry.end),
+                'segment': Segment(entry.start - 1, entry.end),
             }
             if entry.feature == 'transcript':
                 transcript_infos.setdefault(transcript_id, {}).update(formatted)
-            transcript_info = transcript_infos.setdefault(transcript_id, formatted)
+            transcript_info = transcript_infos.setdefault(
+                transcript_id, formatted
+            )
             segment = transcript_info['segment']
-            transcript_info['segment'] = Segment(min(segment.start, entry.start-1), max(segment.end, entry.end))
-            transcript_info['transcript_name'] = transcript_name or transcript_info.get('transcript_name', '')
+            transcript_info['segment'] = Segment(
+                min(segment.start, entry.start - 1),
+                max(segment.end, entry.end)
+            )
+            transcript_info['transcript_name'
+                            ] = transcript_name or transcript_info.get(
+                                'transcript_name', ''
+                            )
 
             if entry.feature == 'exon':
-                transcript_exons.setdefault(transcript_id, SegmentCollection()).add_segment(Segment(entry.start-1, entry.end))
+                transcript_exons.setdefault(
+                    transcript_id, SegmentCollection()
+                ).add_segment(Segment(entry.start - 1, entry.end))
 
     # Clean gene infos so that they link to only transcripts existing in transcript_infos
     for gene_id, attributes in gene_infos.items():
-        cleaned = list(set(t for t in attributes['transcripts'] if t in transcript_infos))
+        cleaned = list(
+            set(t for t in attributes['transcripts'] if t in transcript_infos)
+        )
         attributes['transcripts'] = cleaned
         if not cleaned:
             logger.warning(
@@ -418,7 +460,9 @@ def genes_and_transcripts_from_gtf(gtf_path: str, use_version: bool = False) -> 
                 'transcript_name': '',
                 'segment': attributes['segment'],
             }
-            transcript_exons[gene_id] = SegmentCollection(segments=[attributes['segment']])
+            transcript_exons[gene_id] = SegmentCollection(
+                segments=[attributes['segment']]
+            )
 
     # Calculate introns
     for transcript_id, attributes in transcript_infos.items():
@@ -428,13 +472,17 @@ def genes_and_transcripts_from_gtf(gtf_path: str, use_version: bool = False) -> 
         exons = transcript_exons.get(transcript_id, SegmentCollection())
         if exons:
             if exons[0].start > transcript_interval.start:
-                introns.add_segment(Segment(transcript_interval.start, exons[0].start))
+                introns.add_segment(
+                    Segment(transcript_interval.start, exons[0].start)
+                )
 
             for i in range(len(exons) - 1):
                 introns.add_segment(Segment(exons[i].end, exons[i + 1].start))
 
             if exons[-1].end < transcript_interval.end:
-                introns.add_segment(Segment(exons[-1].end, transcript_interval.end))
+                introns.add_segment(
+                    Segment(exons[-1].end, transcript_interval.end)
+                )
         else:
             logger.warning(
                 f'Gene `{attributes["gene_id"]}` transcript `{transcript_id}` has no exons. '
@@ -445,5 +493,7 @@ def genes_and_transcripts_from_gtf(gtf_path: str, use_version: bool = False) -> 
         attributes['exons'] = exons
         attributes['introns'] = introns
 
-    logger.debug(f'Parsed {len(gene_infos)} genes and {len(transcript_infos)} transcripts')
+    logger.debug(
+        f'Parsed {len(gene_infos)} genes and {len(transcript_infos)} transcripts'
+    )
     return gene_infos, transcript_infos

@@ -35,8 +35,8 @@ class FastaEntry:
 
     @property
     def name(self):
-        return self.header[1:self.header.
-                           index(' ')] if ' ' in self.header else self.header[1:]
+        return self.header[1:self.header.index(' ')
+                           ] if ' ' in self.header else self.header[1:]
 
     @property
     def attributes(self):
@@ -100,8 +100,9 @@ class Fasta(utils.FileWrapper):
         self.fp.write(f'{entry.header}\n')
         self.fp.write(f'{entry.sequence}\n')
 
+
 def split_genomic_fasta_to_cdna(
-    fasta_path: str, out_path: str, gene_infos: dict, transcript_infos: dict
+        fasta_path: str, out_path: str, gene_infos: dict, transcript_infos: dict
 ) -> str:
     """Split a genomic FASTA into cDNA by using gene and transcript information
     generated from extracting information from a GTF.
@@ -120,7 +121,8 @@ def split_genomic_fasta_to_cdna(
                     })
 
             # Write all transcripts as separate FASTA entries.
-            for transcript_id, transcript_attributes in _transcript_infos.items():
+            for transcript_id, transcript_attributes in _transcript_infos.items(
+            ):
                 gene_id = transcript_attributes['gene_id']
                 gene_name = _gene_infos[gene_id].get('gene_name')
                 transcript_name = transcript_attributes.get('transcript_name')
@@ -133,7 +135,7 @@ def split_genomic_fasta_to_cdna(
                         'gene_name': gene_name,
                         'transcript_name': transcript_name,
                         'chr': chromosome,
-                        'start': segment.start+1,
+                        'start': segment.start + 1,
                         'end': segment.end,
                         'strand': strand
                     }
@@ -152,7 +154,11 @@ def split_genomic_fasta_to_cdna(
 
 
 def split_genomic_fasta_to_intron(
-    fasta_path: str, out_path: str, gene_infos: dict, transcript_infos: dict, flank: int = 30
+        fasta_path: str,
+        out_path: str,
+        gene_infos: dict,
+        transcript_infos: dict,
+        flank: int = 30
 ) -> str:
     """Split a genomic FASTA into introns by using gene and transcript information
     generated from extracting information from a GTF.
@@ -171,7 +177,8 @@ def split_genomic_fasta_to_intron(
                     })
 
             # Write all transcripts as separate FASTA entries.
-            for transcript_id, transcript_attributes in _transcript_infos.items():
+            for transcript_id, transcript_attributes in _transcript_infos.items(
+            ):
                 gene_id = transcript_attributes['gene_id']
                 gene_name = _gene_infos[gene_id].get('gene_name')
                 transcript_name = transcript_attributes.get('transcript_name')
@@ -191,7 +198,7 @@ def split_genomic_fasta_to_intron(
                             'gene_name': gene_name,
                             'transcript_name': transcript_name,
                             'chr': chromosome,
-                            'start': segment.start+1,
+                            'start': segment.start + 1,
                             'end': segment.end,
                             'strand': strand
                         }
