@@ -3,6 +3,8 @@ import re
 from . import sequence, utils
 from .logging import logger
 
+from typing_extensions import Literal
+
 
 class FastaEntryError(Exception):
     pass
@@ -13,9 +15,25 @@ class FastaError(Exception):
 
 
 class FastaEntry:
+    """Represents a single FASTA entry, which consists of a header and a sequence.
+
+    Attributes:
+        ATTRIBUTE_PARSER: Static attribute that is a compiled regex. Used to parse
+            attributes.
+        _header: Header string; for internal use only. Use ``header`` instead.
+        _sequence: Sequence string; for internal use only. Use ``sequence`` instead.
+    """
     ATTRIBUTE_PARSER = re.compile(r'(?P<key>\S+?):(?P<value>\S*)')
 
     def __init__(self, header: str, sequence: str):
+        """
+        Args:
+            header: Header string, including the ``>`` character
+            sequence: Sequence string
+
+        Raises:
+            FastaEntryError: if the ``header`` does not start with ``>``
+        """
         if not header.startswith('>'):
             raise FastaEntryError(
                 f'FASTA header `{header}` does not start with `>`'
@@ -26,19 +44,26 @@ class FastaEntry:
 
     @property
     def header(self):
+        """Header string, including the ``>`` character"""
         return self._header
 
     @property
     def sequence(self):
+        """Sequence string"""
         return self._sequence
 
     @property
     def name(self):
+        """Name of the sequence, which comes immedately after ``>`` in the header
+        """
         return self.header[1:self.header.index(' ')
                            ] if ' ' in self.header else self.header[1:]
 
     @property
     def attributes(self):
+        """Dictionary of entry attributes, parsed from the substring of the header
+        after the first space character.
+        """
         attributes = {}
         attribute_str = self.header[self.header.index(' ') +
                                     1:] if ' ' in self.header else ''
@@ -51,22 +76,41 @@ class FastaEntry:
         return attributes
 
     @staticmethod
-    def make_header(name, attributes):
+    def make_header(name: str, attributes: dict):
+        """Static method to construct a header string from a name and attributes.
+
+        Args:
+            name: entry name
+            attributes: dictionary containing entry attributes
+        """
         attributes_str = ' '.join(f'{k}:{v}' for k, v in attributes.items())
         return f'>{name} {attributes_str}'
 
 
 class Fasta(utils.FileWrapper):
-    PARSER = re.compile(r'^>(?P<sequence_id>\S+)(?P<group>.*)')
-    GROUP_PARSER = re.compile(r'(?P<key>\S+?):(?P<value>\S+)')
+    """Represents a single FASTA file.
 
-    def __init__(self, path: str, mode: str = 'r'):
+    Attributes:
+        _header: Variable that temporarily holds the header string for the next
+            FASTA entry; for internal use only.
+    """
+
+    def __init__(self, path: str, mode: Literal['r', 'w'] = 'r'):
         super(Fasta, self).__init__(path, mode)
 
         # Cache for next header is needed to implement read() properly.
         self._header = None
 
     def read(self) -> FastaEntry:
+        """Read a single FASTA entry as a :class:`FastaEntry` instance.
+
+        Returns:
+            The next FASTA entry
+
+        Raises:
+            FastaError: If the file was not opened for reading, or the file was closed.
+            StopIteration: When there are no more entries to read.
+        """
         if self.mode != 'r':
             raise FastaError(f'Can not read from file in mode `{self.mode}`')
         if self.closed:
@@ -91,6 +135,14 @@ class Fasta(utils.FileWrapper):
         return FastaEntry(header, sequence)
 
     def write(self, entry: FastaEntry):
+        """Write a single FASTA entry.
+
+        Args:
+            entry: The FASTA entry to write
+
+        Raises:
+            FastaError: If the file was not opened for writing, or the file was closed.
+        """
         if self.mode != 'w':
             raise FastaError(f'Can not write to file in mode `{self.mode}`')
         if self.closed:
@@ -105,6 +157,17 @@ def split_genomic_fasta_to_cdna(
 ) -> str:
     """Split a genomic FASTA into cDNA by using gene and transcript information
     generated from extracting information from a GTF.
+
+    Args:
+        fasta_path: Path to FASTA containing genomic sequences
+        out_path: Path to output FASTA that will contain cDNA sequences
+        gene_infos: Dictionary containing gene information, as returned by
+            :func:`ngs_tools.gtf.genes_and_transcripts_from_gtf`
+        transcript_infos: Dictionary containing transcript information, as returned by
+            :func:`ngs_tools.gtf.genes_and_transcripts_from_gtf`
+
+    Returns:
+        Path to written FASTA
     """
     with Fasta(fasta_path, 'r') as f_in, Fasta(out_path, 'w') as f_out:
         for entry in f_in:
@@ -160,7 +223,20 @@ def split_genomic_fasta_to_intron(
     flank: int = 30
 ) -> str:
     """Split a genomic FASTA into introns by using gene and transcript information
-    generated from extracting information from a GTF.
+    generated from extracting information from a GTF. Optionally append flanking
+    sequences and collapse introns that have overlapping flanking regions.
+
+    Args:
+        fasta_path: Path to FASTA containing genomic sequences
+        out_path: Path to output FASTA that will contain cDNA sequences
+        gene_infos: Dictionary containing gene information, as returned by
+            :func:`ngs_tools.gtf.genes_and_transcripts_from_gtf`
+        transcript_infos: Dictionary containing transcript information, as returned by
+            :func:`ngs_tools.gtf.genes_and_transcripts_from_gtf`
+        flank: Number of flanking bases to include for each intron. Defaults to 30.
+
+    Returns:
+        Path to written FASTA
     """
     with Fasta(fasta_path, 'r') as f_in, Fasta(out_path, 'w') as f_out:
         for entry in f_in:

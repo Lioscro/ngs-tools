@@ -15,8 +15,17 @@ def map_bam(
     map_func: Callable[[pysam.AlignedSegment], Any],
     n_threads: int = 1
 ):
-    """Generator to map an arbitrary function to every read and return a list of
-    return values.
+    """Generator to map an arbitrary function to every read and return its return
+    values.
+
+    Args:
+        bam_path: Path to the BAM file
+        map_func: Function that takes a :class:`pysam.AlignedSegment` object and
+            returns some value
+        n_threads: Number of threads to use. Defaults to 1.
+
+    Yields:
+        ``map_func`` applied to each read in the BAM file
     """
     with pysam.AlignmentFile(bam_path, 'rb', threads=n_threads,
                              check_sq=False) as f:
@@ -34,6 +43,16 @@ def apply_bam(
 ):
     """Apply an arbitrary function to every read in a BAM. Reads for which the
     function returns `None` are not written to the output BAM.
+
+    Args:
+        bam_path: Path to the BAM file
+        apply_func: Function that takes a :class:`pysam.AlignedSegment` object and
+            optionally returns :class:`pysam.AlignedSegment` objects
+        out_path: Path to output BAM file
+        n_threads: Number of threads to use. Defaults to 1.
+
+    Returns:
+        Path to written BAM
     """
     with pysam.AlignmentFile(bam_path, 'rb', threads=n_threads,
                              check_sq=False) as f_in:
@@ -44,6 +63,7 @@ def apply_bam(
                 result = apply_func(read)
                 if result is not None:
                     f_out.write(result)
+    return out_path
 
 
 def tag_bam_with_fastq(
@@ -55,6 +75,21 @@ def tag_bam_with_fastq(
     n_threads: int = 1,
 ):
     """Add tags to BAM entries using sequences from a FASTQ file.
+
+    Internally, this function calls :func:`apply_bam`.
+
+    Args:
+        bam_path: Path to the BAM file
+        fastq_path: Path to FASTQ file
+        tag_func: Function that takes a :class:`pysam.AlignedSegment` object and
+            returns a dictionary of tags
+        out_path: Path to output BAM file
+        check_name: Whether or not to raise a :class:`BamError` if the FASTQ does not
+            contain a read in the BAM
+        n_threads: Number of threads to use. Defaults to 1.
+
+    Returns:
+        Path to written BAM
     """
     tags = {
         read.name: tag_func(read)
@@ -78,9 +113,21 @@ def filter_bam(
     out_path: str,
     n_threads: int = 1,
 ):
-    """Filter a BAM by applying the given function to each pysam.AlignedSegment
+    """Filter a BAM by applying the given function to each :class:`pysam.AlignedSegment`
     object. When the function returns False, the read is not written to the output
     BAM.
+
+    Internally, this function calls :func:`apply_bam`.
+
+    Args:
+        bam_path: Path to the BAM file
+        filter_func: Function that takes a :class:`pysam.AlignedSegment` object and
+            returns False for reads to be filtered out
+        out_path: Path to output BAM file
+        n_threads: Number of threads to use. Defaults to 1.
+
+    Returns:
+        Path to written BAM
     """
     return apply_bam(
         bam_path, lambda al: None

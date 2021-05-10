@@ -7,8 +7,8 @@ from typing import Optional
 def silence_logger(name: str):
     """Given a logger name, silence it completely.
 
-    :param name: name of the logger
-    :type name: str
+    Args:
+        name: Logger name to silence
     """
     package_logger = logging.getLogger(name)
     package_logger.setLevel(logging.CRITICAL + 10)
@@ -16,6 +16,16 @@ def silence_logger(name: str):
 
 
 class Logger:
+    """Custom logger that provides namespacing functionality.
+
+    The following loggers are silenced by default:
+        anndata, h5py, numba, pysam, pystan
+
+    Attributes:
+        FORMAT: Static attribute that encodes the logging format string
+        logger: The logger object
+        ch: A :class:`logging.Streamhandler` object that sets the format
+    """
     FORMAT = '[%(asctime)s] %(levelname)7s %(message)s'
 
     def __init__(self, name: Optional[str] = None):
@@ -34,12 +44,12 @@ class Logger:
         silence_logger('pysam')
         silence_logger('pystan')
 
-    def namespaced(self, namespace):
+    def namespaced(self, namespace: str):
         """Function decorator to set the logging namespace for the duration of
         the function.
 
-        :param namespace: the namespace
-        :type namespace: str
+        Args:
+            namespace: The namespace
         """
 
         def wrapper(func):
@@ -58,25 +68,25 @@ class Logger:
         return wrapper
 
     @contextmanager
-    def namespaced_context(self, namespace):
+    def namespaced_context(self, namespace: str):
         """Context manager to set the logging namespace.
 
-        :param namespace: the namespace
-        :type namespace: str
+        Args:
+            namespace: The namespace
         """
         previous = self.namespace
         self.namespace = namespace
         yield
         self.namespace = previous
 
-    def namespace_message(self, message):
+    def namespace_message(self, message: str) -> str:
         """Add namespace information at the beginning of the logging message.
 
-        :param message: the logging message
-        :type message: str
+        Args:
+            message: The logging message
 
-        :return: namespaced message
-        :rtype: string
+        Returns:
+            The namespaced message
         """
         return f'[{self.namespace}] {message}'
 
@@ -121,5 +131,12 @@ logger = Logger()
 
 
 def set_logger(log: Logger):
+    """Set the logger to the provided :class:`Logger` instance. Use this function
+    to override the default logger for this (ngs-tools) library from libraries that
+    use this library (ngs-tools) as a dependency.
+
+    Args:
+        log: The logger
+    """
     global logger
     logger = log
