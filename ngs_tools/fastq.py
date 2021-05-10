@@ -21,6 +21,7 @@ class Quality:
     Attributes:
         _string: Raw quality string; for internal use only. Use ``string`` instead.
     """
+
     def __init__(self, qualities: str):
         """
         Args:

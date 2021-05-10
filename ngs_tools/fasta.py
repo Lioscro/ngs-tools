@@ -3,6 +3,8 @@ import re
 from . import sequence, utils
 from .logging import logger
 
+from typing_extensions import Literal
+
 
 class FastaEntryError(Exception):
     pass
@@ -92,7 +94,8 @@ class Fasta(utils.FileWrapper):
         _header: Variable that temporarily holds the header string for the next
             FASTA entry; for internal use only.
     """
-    def __init__(self, path: str, mode: str = 'r'):
+
+    def __init__(self, path: str, mode: Literal['r', 'w'] = 'r'):
         super(Fasta, self).__init__(path, mode)
 
         # Cache for next header is needed to implement read() properly.

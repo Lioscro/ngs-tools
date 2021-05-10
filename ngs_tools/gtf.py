@@ -316,7 +316,9 @@ class SegmentCollection:
         return SegmentCollection(segments)
 
     @classmethod
-    def from_positions(cls, positions: Union[List[int], Set[int]]) -> 'SegmentCollection':
+    def from_positions(
+        cls, positions: Union[List[int], Set[int]]
+    ) -> 'SegmentCollection':
         """Initialize a new collection given a list or set of integer positions.
 
         Args:
@@ -342,7 +344,9 @@ class SegmentCollection:
         return collection
 
     @classmethod
-    def from_collections(cls, *collections: 'SegmentCollection') -> 'SegmentCollection':
+    def from_collections(
+        cls, *collections: 'SegmentCollection'
+    ) -> 'SegmentCollection':
         """Initialize a new collection given an arbitrary number of collections.
 
         Args:
