@@ -1,7 +1,7 @@
 import bisect
 import re
 from itertools import product
-from typing import Generator, Optional, Tuple
+from typing import Generator, List, Optional, Set, Tuple, Union
 
 from . import utils
 from .logging import logger
@@ -12,15 +12,23 @@ class SegmentError(Exception):
 
 
 class Segment:
-    """Class to represent an integer interval segment, zero-indexed.
+    """Class to represent an integer interval segment, zero-indexed, start-inclusive
+    and end-exclusive.
 
-    :param start: start position
-    :type start: int
-    :param end: end position
-    :type end: int
+    Attributes:
+        _start: Segment start; for internal use only. Use ``start`` instead.
+        _end: Segment end; for internal use only. Use ``end`` instead.
     """
 
-    def __init__(self, start, end):
+    def __init__(self, start: int, end: int):
+        """
+        Args:
+            start: Segment start
+            end: Segment end
+
+        Raises:
+            SegmentError: If ``end <= start`` or ``start < 0``
+        """
         if end <= start or start < 0:
             raise SegmentError(f'Invalid segment [{start}:{end})')
 
@@ -29,29 +37,72 @@ class Segment:
 
     @property
     def start(self):
+        """Segment start"""
         return self._start
 
     @property
     def end(self):
+        """Segment end"""
         return self._end
 
     @property
     def width(self):
+        """Segment width"""
         return self.end - self.start
 
-    def is_in(self, i):
+    def is_in(self, i: int) -> bool:
+        """Evaluate whether an integer is contained within the segment.
+
+        Args:
+            i: Integer number to check
+
+        Returns:
+            True or False
+        """
         return i >= self.start and i < self.end
 
-    def is_exclusive(self, segment):
+    def is_exclusive(self, segment: 'Segment') -> bool:
+        """Evaluate whether this segment is exclusive of another segment.
+
+        Args:
+            segment: :class:`''Segment` object to check
+
+        Returns:
+            True or False
+        """
         return self.end <= segment.start or self.start >= segment.end
 
-    def is_overlapping(self, segment):
+    def is_overlapping(self, segment: 'Segment') -> bool:
+        """Evaluate whether this segment overlaps with another segment.
+
+        Args:
+            segment: :class:`''Segment` object to check
+
+        Returns:
+            True or False
+        """
         return not self.is_exclusive(segment)
 
-    def is_subset(self, segment):
+    def is_subset(self, segment: 'Segment') -> bool:
+        """Evaluate whether this segment is a subset of another segment.
+
+        Args:
+            segment: :class:`''Segment` object to check
+
+        Returns:
+            True or False
+        """
         return self.start >= segment.start and self.end <= segment.end
 
-    def is_superset(self, segment):
+    def is_superset(self, segment: 'Segment') -> bool:
+        """Evaluate whether this segment is a superset of another segment.
+
+        Args:
+            segment: :class:`''Segment` object to check
+
+        Returns:
+            True or False
+        """
         return self.start <= segment.start and self.end >= segment.end
 
     def flank(
@@ -59,7 +110,20 @@ class Segment:
         l: int,  # noqa: E741
         left: Optional[int] = None,
         right: Optional[int] = None
-    ):
+    ) -> 'Segment':
+        """Construct a new segment with start and end flanks of length ``l``.
+        Optionally, limit the size of the new segment.
+
+        Args:
+            l: Flank length
+            left: Clip the resulting segment's start to this value. Defaults to None.
+                If not provided, no clipping is performed.
+            right: Clip the resulting segment's end to this value. Defaults to None.
+                If not provided, no clipping is performed.
+
+        Returns:
+            The new segment
+        """
         left = left or 0
         right = right or self.end + l
         return Segment(max(left, self.start - l), min(self.end + l, right))
@@ -85,29 +149,46 @@ class Segment:
 
 class SegmentCollection:
     """Class to represent a collection of integer interval segments, zero-indexed.
+    The segments are always sorted and overlaps are collapsed.
 
-    :param segments: list of initial segments, defaults to `None`
-    :type segments: list, optional
+    Attributes:
+        segments: List of :class:`''Segment` instances
     """
 
-    def __init__(self, segments=None):
+    def __init__(self, segments: Optional[List[Segment]] = None):
+        """
+        Args:
+            segments: List of segments. Defaults to None.
+        """
         self.segments = sorted(segments) if segments else []
         if self.segments:
             self.collapse()
 
     @property
     def start(self):
-        return self.segments[0].start if self.segments else -1
+        """Leftmost value of all segments. None if there are no segments."""
+        return self.segments[0].start if self.segments else None
 
     @property
     def end(self):
-        return self.segments[-1].end if self.segments else -1
+        """Rightmost value of all segments. None if there are no segments."""
+        return self.segments[-1].end if self.segments else None
 
-    def add_segment(self, segment):
+    def add_segment(self, segment: Segment):
+        """Add a segment to the collection.
+
+        Args:
+            segment: Segment to add
+        """
         bisect.insort_left(self.segments, segment)
         self.collapse()
 
-    def add_collection(self, collection):
+    def add_collection(self, collection: 'SegmentCollection'):
+        """Add a collection of segments to the collection.
+
+        Args:
+            collection: Collection to add
+        """
         self.segments = sorted(self.segments + collection.segments)
         self.collapse()
 
@@ -124,6 +205,9 @@ class SegmentCollection:
         return bool(self.segments)
 
     def collapse(self):
+        """Collapse the segments in this collection such that there are no overlapping
+        segments. Any overlapping segments are merged into a single large segment.
+        """
         segments = []
         combined = None
         for segment in self.segments:
@@ -143,10 +227,27 @@ class SegmentCollection:
 
         self.segments = segments
 
-    def span_is_exclusive(self, collection):
+    def span_is_exclusive(self, collection: 'SegmentCollection') -> bool:
+        """Evaluate whether the span of this collection is exclusive of that of
+        another collection.
+
+        Args:
+            collection: :class:`''SegmentCollection` object to check
+
+        Returns:
+            True or False
+        """
         return self.end <= collection.start or self.start >= collection.end
 
-    def is_overlapping(self, collection):
+    def is_overlapping(self, collection: 'SegmentCollection') -> bool:
+        """Evaluate whether this collection overlaps with another collection.
+
+        Args:
+            collection: :class:`''SegmentCollection` object to check
+
+        Returns:
+            True or False
+        """
         if self.span_is_exclusive(collection):
             return False
         return any(
@@ -154,7 +255,15 @@ class SegmentCollection:
             for segment_1, segment_2 in product(self, collection)
         )
 
-    def is_subset(self, collection):
+    def is_subset(self, collection: 'SegmentCollection') -> bool:
+        """Evaluate whether this collection is a subset of another collection.
+
+        Args:
+            collection: :class:`''SegmentCollection` object to check
+
+        Returns:
+            True or False
+        """
         if self.span_is_exclusive(collection):
             return False
         # Assume segments are sorted
@@ -171,7 +280,15 @@ class SegmentCollection:
                 return False
         return True
 
-    def is_superset(self, collection):
+    def is_superset(self, collection: 'SegmentCollection') -> bool:
+        """Evaluate whether this collection is a superset of another collection.
+
+        Args:
+            collection: :class:`''SegmentCollection` object to check
+
+        Returns:
+            True or False
+        """
         return collection.is_subset(self)
 
     def flank(
@@ -179,12 +296,35 @@ class SegmentCollection:
         l: int,  # noqa: E741
         left: Optional[int] = None,
         right: Optional[int] = None
-    ):
+    ) -> 'SegmentCollection':
+        """Construct a new segment collection where all the segments have start and
+        end flanks of length ``l``. Optionally, limit the span of the new segment collection.
+        This is done by calling :func:`''Segment.flank` on all the segments and initializing
+        a new :class:`''SegmentCollection`. Any overlaps are collapsed.
+
+        Args:
+            l: Flank length
+            left: Clip the resulting collection's start to this value. Defaults to None.
+                If not provided, no clipping is performed.
+            right: Clip the resulting collection's end to this value. Defaults to None.
+                If not provided, no clipping is performed.
+
+        Returns:
+            The new collection
+        """
         segments = [segment.flank(l, left, right) for segment in self.segments]
         return SegmentCollection(segments)
 
     @classmethod
-    def from_positions(cls, positions):
+    def from_positions(cls, positions: Union[List[int], Set[int]]) -> 'SegmentCollection':
+        """Initialize a new collection given a list or set of integer positions.
+
+        Args:
+            positions: Integer positions to construct the collection from
+
+        Returns:
+            The new collection
+        """
         collection = cls()
         positions = sorted(positions)
         start = positions[0]
@@ -202,7 +342,15 @@ class SegmentCollection:
         return collection
 
     @classmethod
-    def from_collections(cls, *collections):
+    def from_collections(cls, *collections: 'SegmentCollection') -> 'SegmentCollection':
+        """Initialize a new collection given an arbitrary number of collections.
+
+        Args:
+            *collections: The collections to combine
+
+        Returns:
+            The new collection
+        """
         segments = []
         for collection in collections:
             segments.extend(collection.segments)
@@ -232,6 +380,21 @@ class GtfError(Exception):
 
 
 class GtfEntry:
+    """Represents a single GTF entry.
+
+    Attributes:
+        PARSER: Static attribute that contains a compiled regex. Used to parse a GTF line.
+        ATTRIBUTE_PARSER: Static attribute that contains a compiled regex.
+            Used to parse GTF entry attributes.
+        _line: Raw GTF line; for internal use only. Use ``line`` instead.
+        _chromosome: Chromosome; for internal use only. Use ``chromosome`` instead.
+        _feature: Feature; for internal use only. Use ``feature`` instead.
+        _start: Start; for internal use only. Use ``start`` instead.
+        _end: End; for internal use only. Use ``end`` instead.
+        _strand: Strand; for internal use only. Use ``strand`` instead.
+        _attribute_str: Raw GTF entry attribute string; for internal use only.
+            Use ``attributes`` instead.
+    """
     PARSER = re.compile(
         r'''
         ^(?P<chromosome>.+?)\s+ # chromosome
@@ -248,6 +411,10 @@ class GtfEntry:
     ATTRIBUTE_PARSER = re.compile(r'(?P<key>\S+?)\s*"(?P<value>.+?)";?')
 
     def __init__(self, line: str):
+        """
+        Args:
+            line: Raw GTF line.
+        """
         match = self.PARSER.match(line)
         if not match:
             raise GtfEntryError(f'Failed to parse GTF line {line}')
@@ -262,41 +429,64 @@ class GtfEntry:
 
     @property
     def line(self):
+        """Raw GTF line"""
         return self._line
 
     @property
     def chromosome(self):
+        """Chromosome"""
         return self._chromosome
 
     @property
     def feature(self):
+        """Feature"""
         return self._feature
 
     @property
     def start(self):
+        """Start"""
         return self._start
 
     @property
     def end(self):
+        """End"""
         return self._end
 
     @property
     def strand(self):
+        """Strand"""
         return self._strand
 
     @property
     def attributes(self):
+        """Dictionary of attributes"""
         return dict(
             self.ATTRIBUTE_PARSER.findall(self._attribute_str.replace(' ', ''))
         )
 
     def to_segment(self) -> Segment:
+        """Convert this GTF entry into a :class:`Segment`.
+
+        Returns:
+            The new segment
+        """
         return Segment(self.start - 1, self.end)
 
 
 class Gtf(utils.FileWrapper):
+    """Class that represents a GTF file.
+    """
 
     def read(self) -> GtfEntry:
+        """Read a single GTF entry as a :class:`GtfEntry` instance.
+
+        Returns:
+            The next GTF entry
+
+        Raises:
+            GtfError: If the file was not opened for reading, or the file was closed.
+            StopIteration: When there are no more entries to read.
+        """
         if self.mode != 'r':
             raise GtfError(f'Can not read from file in mode `{self.mode}`')
         if self.closed:
@@ -310,6 +500,14 @@ class Gtf(utils.FileWrapper):
         return GtfEntry(line)
 
     def write(self, entry: GtfEntry):
+        """Write a single GTF entry.
+
+        Args:
+            entry: The GTF entry to write
+
+        Raises:
+            FastaError: If the file was not opened for writing, or the file was closed.
+        """
         if self.mode != 'w':
             raise GtfError(f'Can not write to file in mode `{self.mode}`')
         if self.closed:
@@ -322,7 +520,14 @@ def parse_gtf(
     gtf_path: str,
     features: list = ['exon', 'transcript', 'gene']
 ) -> Generator[GtfEntry, None, None]:
-    """Parse GTF and yield only the specified features as GtfEntry's.
+    """Parse GTF and yield only the specified features as :class:`GtfEntry` instances.
+
+    Args:
+        gtf_path: path to GTF file
+        features: list of GTF features to extract
+
+    Yields:
+        GTF entries
     """
     with Gtf(gtf_path, 'r') as f:
         for entry in f:
@@ -333,7 +538,16 @@ def parse_gtf(
 def genes_and_transcripts_from_gtf(gtf_path: str,
                                    use_version: bool = False
                                    ) -> Tuple[dict, dict]:
-    """Parse GTF for gene and transcript information.
+    """Parse GTF for gene and transcript information. Also, compute the introns of
+    each transcript.
+
+    Args:
+        gtf_path: path to GTF file
+        use_version: whether or not to use gene and transcript versions
+
+    Returns:
+        Dictionary containing gene information
+        Dictionary containing transcript information
     """
     gene_infos = {}
     transcript_exons = {}

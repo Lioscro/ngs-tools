@@ -73,8 +73,15 @@ class SequenceError(Exception):
     pass
 
 
-def complement_sequence(sequence: str, reverse: bool = False):
+def complement_sequence(sequence: str, reverse: bool = False) -> str:
     """Complement the given sequence, with optional reversing.
+
+    Args:
+        sequence: Input sequence
+        reverse: Whether or not to perform reverse complementation
+
+    Returns:
+        Complemented (and optionally reversed) string
     """
     sequence = sequence.upper()
     if reverse:
@@ -157,6 +164,18 @@ def call_consensus_with_qualities(
     among these sequences. The match probability of a sequence to a consensus is the sum of
     the quality values where they do not match (equivalent to negative log probability that
     all mismatches were sequencing errors). Provided work well for most cases.
+
+    Args:
+        sequences: Sequences to call consensus for
+        qualities: Quality scores for the sequences
+        q_threshold: Quality threshold
+        proportion: Proportion of each sequence to allow bases to be below ``q_threshold``
+        return_qualities: Whether or not to return qualities for the consensuses
+
+    Returns:
+        List of consensus sequences
+        Numpy array of assignments for each sequence in ``sequences``
+        Qualities for each of the consensus sequences, if ``return_qualities`` is True
     """
     # Check number of sequences and their lengths match with provided qualities
     if len(sequences) != len(qualities):
@@ -265,6 +284,17 @@ def call_consensus_with_qualities(
 
 
 def levenshtein_distance(sequence1: str, sequence2: str) -> int:
+    """Calculate the Levenshtein (edit) distance between two sequences.
+    This is calculated by calling :func:`pyseq_align.NeedlemanWunsch.align`
+    with the appropriate scores/penalties.
+
+    Args:
+        sequence1: First sequence
+        sequence2: Second sequence
+
+    Returns:
+        Levenshtein distance
+    """
     return -LEVENSHTEIN_DISTANCE_ALIGNER.align(sequence1, sequence2).score
 
 
@@ -309,6 +339,16 @@ def _hamming_distance(sequence1: np.ndarray, sequence2: np.ndarray) -> int:
 
 def hamming_distance(sequence1: str, sequence2: str) -> int:
     """Calculate the hamming distance between two sequences.
+
+    Args:
+        sequence1: First sequence
+        sequence2: Second sequence
+
+    Returns:
+        Hamming distance
+
+    Raises:
+        SequenceError: When the sequences are unequal lengths
     """
     if len(sequence1) != len(sequence2):
         raise SequenceError('Unequal lengths')
@@ -330,6 +370,17 @@ def _hamming_distances(
 
 def hamming_distances(sequence: str, sequences: List[str]) -> np.ndarray:
     """Calculate the hamming distance between a sequence and a list of sequences.
+
+    Args:
+        sequence: Sequence
+        sequences: List of sequences
+
+    Returns:
+        Numpy array of hamming distances, where each index ``i`` corresponds to
+        the hamming distance between ``sequence`` and ``sequences[i]``
+
+    Raises:
+        SequenceError: When any of the sequences are unequal length
     """
     if any(len(sequence) != len(seq) for seq in sequences):
         raise SequenceError('All sequences must be equal length')
@@ -354,6 +405,17 @@ def hamming_distance_matrix(
     sequences1: List[str], sequences2: List[str]
 ) -> np.ndarray:
     """Calculate all pairwise hamming distances between two lists of sequences.
+
+    Args:
+        sequences1: List of sequences
+        sequences2: List of sequences
+
+    Returns:
+        Numpy array of hamming distances, where each index ``(i, j)`` corresponds to
+        the hamming distance between ``sequences1[i]`` and ``sequences2[j]``
+
+    Raises:
+        SequenceError: When any of the sequences are unequal length
     """
     if any(len(sequences1[0]) != len(seq) for seq in sequences1 + sequences2):
         raise SequenceError('All sequences must be equal length')
@@ -381,6 +443,16 @@ def _pairwise_hamming_distances(sequences: np.ndarray) -> np.ndarray:
 def pairwise_hamming_distances(sequences: List[str]) -> np.ndarray:
     """Calculate all pairwise hamming distances between combinations of sequences
     from a single list.
+
+    Args:
+        sequences: List of sequences
+
+    Returns:
+        Numpy array of hamming distances, where each index ``(i, j)`` corresponds to
+        the hamming distance between ``sequences[i]`` and ``sequences[j]``
+
+    Raises:
+        SequenceError: When any of the sequences are unequal length
     """
     if any(len(sequences[0]) != len(seq) for seq in sequences):
         raise SequenceError('All sequences must be equal length')
@@ -422,7 +494,7 @@ def correct_sequences_to_whitelist(
     qualities: Union[List[str], List[array.array]],
     whitelist: List[str],
     d: int = 1,
-    confidence: float = 0.9,
+    confidence: float = 0.95,
     n_threads: int = 1
 ) -> List[Union[str, None]]:
     """Correct a list of sequences to a whitelist within `d` hamming distance.
@@ -439,14 +511,39 @@ def correct_sequences_to_whitelist(
     prevent floating-point underflow.
     https://kb.10xgenomics.com/hc/en-us/articles/115003822406-How-does-Cell-Ranger-correct-barcode-sequencing-errors
 
+    Note:
+        Only hamming distance is supported (not Levenshtein distance).
+
+    Args:
+        sequences: List of sequence strings
+        qualities: List of quality strings or list of array of qualities (as
+            returned by :func:`pysam.qualitystring_to_array`)
+        whitelist: List of whitelist sequences to correct to
+        d: Hamming distance threshold. Sequences will be corrected to the whitelist
+            with hamming distance <= ``d``. Defaults to 1.
+        confidence: When a sequence has the same minimum hamming distance to
+            multiple whitelisted sequences, the sequence is assigned to the
+            best whitelisted sequence (using prior probabilities) if the likelihood
+            ratio of this and the sum of all likelihoods is greater than or equal to
+            this value. Defaults to 0.95.
+        n_threads: Number of threads to use. Defaults to 1.
+
+    Raises:
+        SequenceError: If all the lengths of each sequence, qualitiy and
+            whitelisted sequence are not equal, the number of sequences and
+            qualities provided are not equal or the whitelist contains duplicates.
+
+    Returns:
+        The corrections as a list of whitelisted sequences. For sequences that
+        could not be corrected, the corresponding position contains None.
     """
     # Check number of sequences and their lengths match with provided qualities
     if len(sequences) != len(qualities):
-        raise Exception(
+        raise SequenceError(
             f'{len(sequences)} sequences and {len(qualities)} qualities were provided'
         )
     if any(len(seq) != len(qual) for seq, qual in zip(sequences, qualities)):
-        raise Exception(
+        raise SequenceError(
             'length of each sequence must match length of each quality string'
         )
     if len(set(whitelist)) != len(whitelist):

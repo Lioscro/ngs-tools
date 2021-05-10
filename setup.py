@@ -11,7 +11,7 @@ long_description = read('README.md')
 setup(
     name='ngs-tools',
     version='1.0.2',
-    url='https://github.com/Lioscro/ngs_tools',
+    url='https://github.com/Lioscro/ngs-tools',
     author='Kyung Hoi (Joseph) Min',
     author_email='phoenixter96@gmail.com',
     description='Tools for working with next-generation sequencing (NGS) data',  # noqa
