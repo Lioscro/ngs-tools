@@ -166,13 +166,13 @@ class SegmentCollection:
 
     @property
     def start(self):
-        """Leftmost value of all segments. None if there are no segments."""
-        return self.segments[0].start if self.segments else None
+        """Leftmost value of all segments. 0 if there are no segments."""
+        return self.segments[0].start if self.segments else 0
 
     @property
     def end(self):
-        """Rightmost value of all segments. None if there are no segments."""
-        return self.segments[-1].end if self.segments else None
+        """Rightmost value of all segments. 0 if there are no segments."""
+        return self.segments[-1].end if self.segments else 0
 
     def add_segment(self, segment: Segment):
         """Add a segment to the collection.
