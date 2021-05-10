@@ -14,7 +14,7 @@ setup(
     url='https://github.com/Lioscro/ngs-tools',
     author='Kyung Hoi (Joseph) Min',
     author_email='phoenixter96@gmail.com',
-    description='Tools for working with next-generation sequencing (NGS) data',  # noqa
+    description='Reusable tools for working with next-generation sequencing (NGS) data',  # noqa
     long_description=long_description,
     long_description_content_type='text/markdown',
     keywords='',
