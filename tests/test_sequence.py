@@ -24,6 +24,16 @@ class TestSequence(mixins.TestMixin, TestCase):
         self.assertTrue(common[0][1] > 50)
         self.assertTrue(common[1][1] > 25)
 
+    def test_call_consensus_with_qualities_allow_ambiguous(self):
+        sequences = ['AAAC', 'AAAG']
+        qualities = ['AAAA', 'AAAA']
+
+        consensuses, assignments = sequence.call_consensus_with_qualities(
+            sequences, qualities, allow_ambiguous=True
+        )
+        self.assertEqual(consensuses, ['AAAS'])
+        np.testing.assert_equal(assignments, [0, 0])
+
     def test_call_consensus_with_qualities_return_qualities(self):
         with open(self.sequences_path, 'r') as f1, open(self.qualities_path,
                                                         'r') as f2:

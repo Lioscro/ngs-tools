@@ -55,6 +55,7 @@ NUCLEOTIDE_MASKS = {
                 dtype=bool)
     for n in NUCLEOTIDES
 }
+MASK_TO_NUCLEOTIDE = {tuple(mask): n for n, mask in NUCLEOTIDE_MASKS.items()}
 LEVENSHTEIN_DISTANCE_ALIGNER = NeedlemanWunsch(
     gap_open=0,
     gap_extend=-1,
@@ -121,10 +122,22 @@ def _qualities_to_array(
     return arr
 
 
-def _most_likely_sequence(positional_probs: np.ndarray) -> str:
-    # TODO: deal with ties?
-    indices = positional_probs.argmax(axis=0)
-    return ''.join(NUCLEOTIDES_STRICT[i] for i in indices)
+def _most_likely_array(positional_probs: np.ndarray) -> np.ndarray:
+    return positional_probs == positional_probs.max(axis=0)
+
+
+def _most_likely_sequence(
+    positional_probs: np.ndarray, allow_ambiguous: bool = False
+) -> str:
+    if not allow_ambiguous:
+        indices = positional_probs.argmax(axis=0)
+        return ''.join(NUCLEOTIDES_STRICT[i] for i in indices)
+    else:
+        arr = _most_likely_array(positional_probs)
+        s = ''
+        for i in range(arr.shape[1]):
+            s += MASK_TO_NUCLEOTIDE[tuple(arr[:, i])]
+        return s
 
 
 def _disambiguate_sequence(sequence: np.ndarray) -> List[str]:
@@ -148,11 +161,36 @@ def _calculate_positional_probs(
     return positional_probs
 
 
+def call_consensus(sequences: List[str], proportion: float = 0.05):
+    """Call consensus sequences from a set of sequences. Internally, this
+    function calls :func:`call_consensus_with_qualities` with all qualities set
+    to 1 and ``q_threshold`` set to 1. See the documentation of this function for
+    details on how consensuses are called.
+
+    Args:
+        sequences: Sequences to call consensus for
+        proportion: Proportion of each sequence to allow mismatched bases to be
+            above ``q_threshold``
+    Returns:
+        List of consensus sequences
+        Numpy array of assignments for each sequence in ``sequences``
+    """
+    qualities = [np.full(len(seq), 1) for seq in sequences]
+    return call_consensus_with_qualities(
+        sequences,
+        qualities,
+        q_threshold=1,
+        proportion=proportion,
+        return_qualities=False
+    )
+
+
 def call_consensus_with_qualities(
     sequences: List[str],
-    qualities: Union[List[str], List[array.array]],
-    q_threshold: int = 30,
+    qualities: Union[List[str], List[array.array], List[np.ndarray]],
+    q_threshold: Optional[int] = None,
     proportion: float = 0.05,
+    allow_ambiguous: bool = False,
     return_qualities: bool = False,
 ) -> Union[Tuple[List[str], np.ndarray], Tuple[List[str], np.ndarray,
                                                List[str]]]:
@@ -163,52 +201,68 @@ def call_consensus_with_qualities(
     to this consensus. Then, the consensus is updated by constructing the consensus only
     among these sequences. The match probability of a sequence to a consensus is the sum of
     the quality values where they do not match (equivalent to negative log probability that
-    all mismatches were sequencing errors). Provided work well for most cases.
+    all mismatches were sequencing errors).
 
     Args:
         sequences: Sequences to call consensus for
         qualities: Quality scores for the sequences
-        q_threshold: Quality threshold
-        proportion: Proportion of each sequence to allow bases to be below ``q_threshold``
-        return_qualities: Whether or not to return qualities for the consensuses
+        q_threshold: Quality threshold. Defaults to the median quality score among
+            all bases in all sequences.
+        proportion: Proportion of each sequence to allow mismatched bases to be
+            above ``q_threshold``. Defaults to 0.05.
+        allow_ambiguous: Allow ambiguous bases in the consensus sequences. Defaults to
+            False, which, on ties, selects a single base lexicographically. This
+            option only has an effect when constructing the final consensus
+            sequence as a string, not when calculating error probabilities.
+        return_qualities: Whether or not to return qualities for the consensuses.
+            Defaults to False.
 
     Returns:
         List of consensus sequences
         Numpy array of assignments for each sequence in ``sequences``
         Qualities for each of the consensus sequences, if ``return_qualities`` is True
+
+    Raises:
+        SequenceError: if any sequence-quality pair have different lengths or
+            number of provided sequences does not match number of provided
+            qualities
     """
     # Check number of sequences and their lengths match with provided qualities
     if len(sequences) != len(qualities):
-        raise Exception(
+        raise SequenceError(
             f'{len(sequences)} sequences and {len(qualities)} qualities were provided'
         )
     if any(len(seq) != len(qual) for seq, qual in zip(sequences, qualities)):
-        raise Exception(
+        raise SequenceError(
             'length of each sequence must match length of each quality string'
         )
 
     def _call_consensus(seqs, quals, thresh):
         if len(seqs) == 1:
-            return _most_likely_sequence(seqs[0]), np.array([True], dtype=bool)
+            return _most_likely_sequence(seqs[0],
+                                         allow_ambiguous), np.array([True],
+                                                                    dtype=bool)
 
         positional_probs = _calculate_positional_probs(seqs, quals)
-        consensus_indices = positional_probs.argmax(axis=0)
+        consensus_array = _most_likely_array(positional_probs)
 
         # For each sequence, calculate the probability that the sequence was actually
         # equal the consensus, but the different bases are due to sequencing errors
         # NOTE: should we also be looking at probability that matches are correct?
         probs = []
         for seq, qual in zip(seqs, quals):
-            p = np.sum(qual[consensus_indices != seq.argmax(axis=0)])
+            p = np.sum(qual[_mismatch_mask(consensus_array, seq)])
             probs.append(p)
         probs = np.array(probs)
+        # the max is taken to deal with case where there is only one sequence
         assigned = probs <= max(thresh, min(probs))
 
         # NOTE: we construct a new consensus from assigned sequences
         assigned_seqs = seqs[assigned]
         assigned_quals = quals[assigned]
         return _most_likely_sequence(
-            _calculate_positional_probs(assigned_seqs, assigned_quals)
+            _calculate_positional_probs(assigned_seqs, assigned_quals),
+            allow_ambiguous
         ), assigned
 
     # Convert sequences to array representations
@@ -220,6 +274,9 @@ def call_consensus_with_qualities(
     qualities_arrays = np.array([
         _qualities_to_array(quals, l=l) for quals in qualities
     ])
+    # Compute dynamic quality threshold if not provided
+    if not q_threshold:
+        q_threshold = np.median(qualities_arrays)
 
     # Iteratively call consensus sequences. This used to be done recursively, but there were cases
     # when Python's recursion limit would be reached. Thankfully, all recursive algorithms can be

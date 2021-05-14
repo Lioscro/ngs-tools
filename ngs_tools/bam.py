@@ -81,7 +81,7 @@ def tag_bam_with_fastq(
     Args:
         bam_path: Path to the BAM file
         fastq_path: Path to FASTQ file
-        tag_func: Function that takes a :class:`pysam.AlignedSegment` object and
+        tag_func: Function that takes a :class:`ngs_tools.fastq.Read` object and
             returns a dictionary of tags
         out_path: Path to output BAM file
         check_name: Whether or not to raise a :class:`BamError` if the FASTQ does not
