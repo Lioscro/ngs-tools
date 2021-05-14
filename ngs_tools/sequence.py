@@ -203,6 +203,11 @@ def call_consensus_with_qualities(
     the quality values where they do not match (equivalent to negative log probability that
     all mismatches were sequencing errors).
 
+    Note:
+        This function does not perform any alignment among consensus sequences.
+        To detect any insertions/deletions, call this function and then
+        perform alignment among the called consensus sequences.
+
     Args:
         sequences: Sequences to call consensus for
         qualities: Quality scores for the sequences
@@ -308,6 +313,16 @@ def call_consensus_with_qualities(
         }
         _sequences_arrays = _sequences_arrays[~assigned]
         _qualities_arrays = _qualities_arrays[~assigned]
+
+    # Reorder assignment so that consensuses[0] is the consensus with the greatest
+    # number of assigned sequences, and so on.
+    reordered_consensuses = []
+    reordered_assignments = np.full(len(sequences), -1, dtype=int)
+    for i, _ in Counter(assignments).most_common():
+        reordered_consensuses.append(consensuses[i])
+        reordered_assignments[assignments == i] = len(reordered_consensuses) - 1
+    consensuses = reordered_consensuses
+    assignments = reordered_assignments
 
     # Compute qualities for each consensus sequence if return_qualities = True
     if return_qualities:

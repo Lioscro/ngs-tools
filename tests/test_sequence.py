@@ -20,6 +20,13 @@ class TestSequence(mixins.TestMixin, TestCase):
             sequences, qualities
         )
         counts = Counter(assignments)
+
+        # Check that assignments are ordered
+        self.assertEqual(
+            sorted(counts.values(), reverse=True),
+            [counts[i] for i in range(len(counts))]
+        )
+
         common = counts.most_common(2)
         self.assertTrue(common[0][1] > 50)
         self.assertTrue(common[1][1] > 25)
