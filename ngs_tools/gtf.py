@@ -1,7 +1,7 @@
 import bisect
 import re
 from itertools import product
-from typing import Generator, List, Optional, Set, Tuple, Union
+from typing import Dict, Generator, List, Optional, Set, Tuple, Union
 
 from . import utils
 from .logging import logger
@@ -16,8 +16,8 @@ class Segment:
     and end-exclusive.
 
     Attributes:
-        _start: Segment start; for internal use only. Use ``start`` instead.
-        _end: Segment end; for internal use only. Use ``end`` instead.
+        _start: Segment start; for internal use only. Use :attr:`start` instead.
+        _end: Segment end; for internal use only. Use :attr:`end` instead.
     """
 
     def __init__(self, start: int, end: int):
@@ -36,17 +36,17 @@ class Segment:
         self._end = end
 
     @property
-    def start(self):
+    def start(self) -> int:
         """Segment start"""
         return self._start
 
     @property
-    def end(self):
+    def end(self) -> int:
         """Segment end"""
         return self._end
 
     @property
-    def width(self):
+    def width(self) -> int:
         """Segment width"""
         return self.end - self.start
 
@@ -65,7 +65,7 @@ class Segment:
         """Evaluate whether this segment is exclusive of another segment.
 
         Args:
-            segment: :class:`''Segment` object to check
+            segment: :class:`Segment` object to check
 
         Returns:
             True or False
@@ -76,7 +76,7 @@ class Segment:
         """Evaluate whether this segment overlaps with another segment.
 
         Args:
-            segment: :class:`''Segment` object to check
+            segment: :class:`Segment` object to check
 
         Returns:
             True or False
@@ -87,7 +87,7 @@ class Segment:
         """Evaluate whether this segment is a subset of another segment.
 
         Args:
-            segment: :class:`''Segment` object to check
+            segment: :class:`Segment` object to check
 
         Returns:
             True or False
@@ -98,7 +98,7 @@ class Segment:
         """Evaluate whether this segment is a superset of another segment.
 
         Args:
-            segment: :class:`''Segment` object to check
+            segment: :class:`Segment` object to check
 
         Returns:
             True or False
@@ -140,11 +140,8 @@ class Segment:
     def __gt__(self, other):
         return (self.start, self.end) > (other.start, other.end)
 
-    def __str__(self):
-        return str((self.start, self.end))
-
     def __repr__(self):
-        return str(self)
+        return f'Segment {(self.start, self.end)}'
 
 
 class SegmentCollection:
@@ -152,7 +149,7 @@ class SegmentCollection:
     The segments are always sorted and overlaps are collapsed.
 
     Attributes:
-        segments: List of :class:`''Segment` instances
+        segments: List of :class:`Segment` instances
     """
 
     def __init__(self, segments: Optional[List[Segment]] = None):
@@ -165,12 +162,12 @@ class SegmentCollection:
             self.collapse()
 
     @property
-    def start(self):
+    def start(self) -> int:
         """Leftmost value of all segments. 0 if there are no segments."""
         return self.segments[0].start if self.segments else 0
 
     @property
-    def end(self):
+    def end(self) -> int:
         """Rightmost value of all segments. 0 if there are no segments."""
         return self.segments[-1].end if self.segments else 0
 
@@ -232,7 +229,7 @@ class SegmentCollection:
         another collection.
 
         Args:
-            collection: :class:`''SegmentCollection` object to check
+            collection: :class:`SegmentCollection` object to check
 
         Returns:
             True or False
@@ -243,7 +240,7 @@ class SegmentCollection:
         """Evaluate whether this collection overlaps with another collection.
 
         Args:
-            collection: :class:`''SegmentCollection` object to check
+            collection: :class:`SegmentCollection` object to check
 
         Returns:
             True or False
@@ -259,7 +256,7 @@ class SegmentCollection:
         """Evaluate whether this collection is a subset of another collection.
 
         Args:
-            collection: :class:`''SegmentCollection` object to check
+            collection: :class:`SegmentCollection` object to check
 
         Returns:
             True or False
@@ -284,7 +281,7 @@ class SegmentCollection:
         """Evaluate whether this collection is a superset of another collection.
 
         Args:
-            collection: :class:`''SegmentCollection` object to check
+            collection: :class:`SegmentCollection` object to check
 
         Returns:
             True or False
@@ -299,8 +296,8 @@ class SegmentCollection:
     ) -> 'SegmentCollection':
         """Construct a new segment collection where all the segments have start and
         end flanks of length ``l``. Optionally, limit the span of the new segment collection.
-        This is done by calling :func:`''Segment.flank` on all the segments and initializing
-        a new :class:`''SegmentCollection`. Any overlaps are collapsed.
+        This is done by calling :func:`Segment.flank` on all the segments and initializing
+        a new :class:`SegmentCollection`. Any overlaps are collapsed.
 
         Args:
             l: Flank length
@@ -360,11 +357,8 @@ class SegmentCollection:
             segments.extend(collection.segments)
         return cls(segments=segments)
 
-    def __str__(self):
-        return f'SegmentCollection {str(self.segments)}'
-
     def __repr__(self):
-        return str(self)
+        return f'SegmentCollection {self.segments}'
 
     def __eq__(self, other):
         if len(self) != len(other):
@@ -390,14 +384,14 @@ class GtfEntry:
         PARSER: Static attribute that contains a compiled regex. Used to parse a GTF line.
         ATTRIBUTE_PARSER: Static attribute that contains a compiled regex.
             Used to parse GTF entry attributes.
-        _line: Raw GTF line; for internal use only. Use ``line`` instead.
-        _chromosome: Chromosome; for internal use only. Use ``chromosome`` instead.
-        _feature: Feature; for internal use only. Use ``feature`` instead.
-        _start: Start; for internal use only. Use ``start`` instead.
-        _end: End; for internal use only. Use ``end`` instead.
-        _strand: Strand; for internal use only. Use ``strand`` instead.
+        _line: Raw GTF line; for internal use only. Use :attr:`line` instead.
+        _chromosome: Chromosome; for internal use only. Use :attr:`chromosome` instead.
+        _feature: Feature; for internal use only. Use :attr:`feature` instead.
+        _start: Start; for internal use only. Use :attr:`start` instead.
+        _end: End; for internal use only. Use :attr:`end` instead.
+        _strand: Strand; for internal use only. Use :attr:`strand` instead.
         _attribute_str: Raw GTF entry attribute string; for internal use only.
-            Use ``attributes`` instead.
+            Use :attr:`attributes` instead.
     """
     PARSER = re.compile(
         r'''
@@ -432,37 +426,37 @@ class GtfEntry:
         self._attribute_str = match['attributes']
 
     @property
-    def line(self):
+    def line(self) -> str:
         """Raw GTF line"""
         return self._line
 
     @property
-    def chromosome(self):
+    def chromosome(self) -> str:
         """Chromosome"""
         return self._chromosome
 
     @property
-    def feature(self):
+    def feature(self) -> str:
         """Feature"""
         return self._feature
 
     @property
-    def start(self):
-        """Start"""
+    def start(self) -> int:
+        """Start, 1-indexed"""
         return self._start
 
     @property
-    def end(self):
-        """End"""
+    def end(self) -> int:
+        """End, 1-indexed, inclusive"""
         return self._end
 
     @property
-    def strand(self):
+    def strand(self) -> str:
         """Strand"""
         return self._strand
 
     @property
-    def attributes(self):
+    def attributes(self) -> Dict[str, str]:
         """Dictionary of attributes"""
         return dict(
             self.ATTRIBUTE_PARSER.findall(self._attribute_str.replace(' ', ''))

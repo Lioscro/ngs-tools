@@ -52,6 +52,8 @@ class TestMixin(TestCase):
 
         cls.bam_dir = os.path.join(cls.fixtures_dir, 'bam')
         cls.bam_path = os.path.join(cls.bam_dir, 'small.bam')
+        cls.bam2_path = os.path.join(cls.bam_dir, 'small2.bam')
+        cls.paired_bam_path = os.path.join(cls.bam_dir, 'paired.bam')
 
         cls.sequence_dir = os.path.join(cls.fixtures_dir, 'sequence')
         cls.sequences_path = os.path.join(cls.sequence_dir, 'sequences.txt')

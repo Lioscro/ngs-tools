@@ -72,3 +72,59 @@ class TestBam(TestMixin, TestCase):
         self.assertEqual('read1', reads[0].query_name)
         self.assertEqual('ACTG', reads[0].query_sequence)
         self.assertEqual([32, 32, 32, 33], list(reads[0].query_qualities))
+
+    def test_split_bam_n(self):
+        prefix = os.path.join(self.temp_dir, 'test')
+        self.assertEqual({
+            '0': f'{prefix}_0.bam',
+            '1': f'{prefix}_1.bam'
+        }, bam.split_bam(self.bam2_path, prefix, n=2))
+        with pysam.AlignmentFile(f'{prefix}_0.bam', 'rb', check_sq=False) as f:
+            reads = list(f.fetch(until_eof=True))
+            self.assertEqual(3, len(reads))
+            self.assertEqual(['read1', 'read2', 'read3'],
+                             [read.query_name for read in reads])
+        with pysam.AlignmentFile(f'{prefix}_1.bam', 'rb', check_sq=False) as f:
+            reads = list(f.fetch(until_eof=True))
+            self.assertEqual(1, len(reads))
+            self.assertEqual(['read4'], [read.query_name for read in reads])
+
+    def test_split_bam_func(self):
+        prefix = os.path.join(self.temp_dir, 'test')
+        self.assertEqual({
+            'test': f'{prefix}_test.bam',
+            'test2': f'{prefix}_test2.bam'
+        },
+                         bam.split_bam(
+                             self.bam2_path,
+                             prefix,
+                             split_func=lambda al: al.get_tag('RG')
+                         ))
+        with pysam.AlignmentFile(f'{prefix}_test.bam', 'rb',
+                                 check_sq=False) as f:
+            reads = list(f.fetch(until_eof=True))
+            self.assertEqual(2, len(reads))
+            self.assertEqual(['read1', 'read2'],
+                             [read.query_name for read in reads])
+        with pysam.AlignmentFile(f'{prefix}_test2.bam', 'rb',
+                                 check_sq=False) as f:
+            reads = list(f.fetch(until_eof=True))
+            self.assertEqual(2, len(reads))
+            self.assertEqual(['read3', 'read4'],
+                             [read.query_name for read in reads])
+
+    def test_split_bam_paired(self):
+        prefix = os.path.join(self.temp_dir, 'test')
+        self.assertEqual({
+            '0': f'{prefix}_0.bam',
+            '1': f'{prefix}_1.bam'
+        }, bam.split_bam(self.paired_bam_path, prefix, n=2))
+        with pysam.AlignmentFile(f'{prefix}_0.bam', 'rb', check_sq=False) as f:
+            reads = list(f.fetch(until_eof=True))
+            self.assertEqual(3, len(reads))
+            self.assertEqual(['read1', 'read2', 'read1'],
+                             [read.query_name for read in reads])
+        with pysam.AlignmentFile(f'{prefix}_1.bam', 'rb', check_sq=False) as f:
+            reads = list(f.fetch(until_eof=True))
+            self.assertEqual(1, len(reads))
+            self.assertEqual(['read3'], [read.query_name for read in reads])

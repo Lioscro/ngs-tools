@@ -1,0 +1,6 @@
+@HD	VN:1.10	SO:unsorted
+@RG	ID:test
+read1	5	*	0	0	*	*	0	0	ACTG	AAAB	RG:Z:test
+read2	4	*	0	0	*	*	0	0	AAGT	///!	RG:Z:test
+read1	5	*	0	0	*	*	0	0	AAGT	///!	RG:Z:test2
+read3	4	*	0	0	*	*	0	0	ACTG	AAAB	RG:Z:test2

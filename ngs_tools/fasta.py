@@ -1,4 +1,5 @@
 import re
+from typing import Dict
 
 from . import sequence, utils
 from .logging import logger
@@ -20,8 +21,8 @@ class FastaEntry:
     Attributes:
         ATTRIBUTE_PARSER: Static attribute that is a compiled regex. Used to parse
             attributes.
-        _header: Header string; for internal use only. Use ``header`` instead.
-        _sequence: Sequence string; for internal use only. Use ``sequence`` instead.
+        _header: Header string; for internal use only. Use :attr:`header` instead.
+        _sequence: Sequence string; for internal use only. Use :attr:`sequence` instead.
     """
     ATTRIBUTE_PARSER = re.compile(r'(?P<key>\S+?):(?P<value>\S*)')
 
@@ -43,24 +44,24 @@ class FastaEntry:
         self._sequence = sequence.strip()
 
     @property
-    def header(self):
+    def header(self) -> str:
         """Header string, including the ``>`` character"""
         return self._header
 
     @property
-    def sequence(self):
+    def sequence(self) -> str:
         """Sequence string"""
         return self._sequence
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Name of the sequence, which comes immedately after ``>`` in the header
         """
         return self.header[1:self.header.index(' ')
                            ] if ' ' in self.header else self.header[1:]
 
     @property
-    def attributes(self):
+    def attributes(self) -> Dict[str, str]:
         """Dictionary of entry attributes, parsed from the substring of the header
         after the first space character.
         """
@@ -76,7 +77,7 @@ class FastaEntry:
         return attributes
 
     @staticmethod
-    def make_header(name: str, attributes: dict):
+    def make_header(name: str, attributes: Dict[str, str]) -> str:
         """Static method to construct a header string from a name and attributes.
 
         Args:
