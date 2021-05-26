@@ -76,8 +76,8 @@ class TestBam(TestMixin, TestCase):
     def test_split_bam_n(self):
         prefix = os.path.join(self.temp_dir, 'test')
         self.assertEqual({
-            '0': f'{prefix}_0.bam',
-            '1': f'{prefix}_1.bam'
+            '0': (f'{prefix}_0.bam', 3),
+            '1': (f'{prefix}_1.bam', 1)
         }, bam.split_bam(self.bam2_path, prefix, n=2))
         with pysam.AlignmentFile(f'{prefix}_0.bam', 'rb', check_sq=False) as f:
             reads = list(f.fetch(until_eof=True))
@@ -92,8 +92,8 @@ class TestBam(TestMixin, TestCase):
     def test_split_bam_func(self):
         prefix = os.path.join(self.temp_dir, 'test')
         self.assertEqual({
-            'test': f'{prefix}_test.bam',
-            'test2': f'{prefix}_test2.bam'
+            'test': (f'{prefix}_test.bam', 2),
+            'test2': (f'{prefix}_test2.bam', 2)
         },
                          bam.split_bam(
                              self.bam2_path,
@@ -116,8 +116,8 @@ class TestBam(TestMixin, TestCase):
     def test_split_bam_paired(self):
         prefix = os.path.join(self.temp_dir, 'test')
         self.assertEqual({
-            '0': f'{prefix}_0.bam',
-            '1': f'{prefix}_1.bam'
+            '0': (f'{prefix}_0.bam', 3),
+            '1': (f'{prefix}_1.bam', 1)
         }, bam.split_bam(self.paired_bam_path, prefix, n=2))
         with pysam.AlignmentFile(f'{prefix}_0.bam', 'rb', check_sq=False) as f:
             reads = list(f.fetch(until_eof=True))

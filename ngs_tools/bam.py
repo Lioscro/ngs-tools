@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, Optional
+from collections import Counter
+from typing import Any, Callable, Dict, Optional, Tuple
 
 import pysam
 from tqdm import tqdm
@@ -73,7 +74,7 @@ def split_bam(
     n: Optional[int] = None,
     n_threads: int = 1,
     check_pair_groups: bool = True,
-) -> Dict[str, str]:
+) -> Dict[str, Tuple[str, int]]:
     """Split a BAM into many parts, either by the number of reads or by an
     arbitrary function. Only one of ``split_func`` or ``n`` must be provided.
     Read pairs are always written to the same file.
@@ -104,9 +105,10 @@ def split_bam(
             Defaults to True.
 
     Returns:
-        Dictionary of paths to split BAMs. The keys are either the string ID of
-        each split (if ``split_func`` is used) or the split index (if ``n`` is used),
-        and the values are paths.
+        Dictionary of tuples, where the first element is the path to a split BAM,
+        and the second element is the number of BAM entries written to that split.
+        The keys are either the string ID of each split (if ``split_func`` is used)
+        or the split index (if ``n`` is used), and the values are paths.
 
     Raises:
         BamError: If any pair constraints are not met.
@@ -187,6 +189,7 @@ def split_bam(
         group_id: f'{split_prefix}_{group_id}.bam'
         for group_id in set(group_ids)
     }
+    split_counts = Counter(group_ids)
     with pysam.AlignmentFile(bam_path, 'rb', check_sq=False,
                              threads=n_threads) as f:
         split_outs = {}
@@ -203,7 +206,10 @@ def split_bam(
         finally:
             for out in split_outs.values():
                 out.close()
-    return split_paths
+    return {
+        group_id: (path, split_counts[group_id])
+        for group_id, path in split_paths.items()
+    }
 
 
 def tag_bam_with_fastq(

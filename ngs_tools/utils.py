@@ -1,5 +1,6 @@
 import gzip
 import os
+import tempfile
 from abc import abstractmethod
 from typing import Any, Optional, TextIO
 
@@ -157,3 +158,24 @@ class FileWrapper:
     def write(self, entry: Any):
         """Write a single entry. This method must be overridden by children."""
         pass
+
+
+def mkstemp(dir: Optional[str] = None, delete: bool = False):
+    """Wrapper for :func:`tempfile.mkstemp` that automatically closes the OS-level
+    file descriptor. This function behaves like :func:`tempfile.mkdtemp` but for
+    files.
+
+    Args:
+        dir: Directory to create the temporary file. This value is passed as
+            the ``dir`` kwarg of :func:`tempfile.mkstemp`. Defaults to None.
+        delete: Whether to delete the temporary file before returning.
+            Defaults to False.
+
+    Returns:
+        path to the temporary file
+    """
+    fd, path = tempfile.mkstemp(dir=dir)
+    os.close(fd)
+    if delete:
+        os.remove(path)
+    return path
