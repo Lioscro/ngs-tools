@@ -67,6 +67,39 @@ def apply_bam(
     return out_path
 
 
+def count_bam(
+    bam_path: str,
+    filter_func: Optional[Callable[[pysam.AlignedSegment], bool]] = None,
+    n_threads: int = 1,
+) -> int:
+    """Count the number of BAM entries. Optionally, a function may be provided to
+    only count certain alignments.
+
+    Args:
+        bam_path: Path to BAM
+        filter_func: Function that takes a :class:`pysam.AlignedSegment` object and
+            returns True for reads to be counted and False otherwise
+        n_threads: Number of threads to use. Defaults to 1.
+
+    Returns:
+        Number of alignments in BAM
+    """
+    with pysam.AlignmentFile(bam_path, 'rb', check_sq=False,
+                             threads=n_threads) as f:
+        try:
+            n = 0
+            for index in f.get_index_statistics():
+                n += index.total
+            return n
+        except ValueError:
+            pass
+    return sum(
+        map_bam(
+            bam_path, filter_func or (lambda al: True), n_threads=n_threads
+        )
+    )
+
+
 def split_bam(
     bam_path: str,
     split_prefix: str,

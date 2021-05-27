@@ -128,3 +128,9 @@ class TestBam(TestMixin, TestCase):
             reads = list(f.fetch(until_eof=True))
             self.assertEqual(1, len(reads))
             self.assertEqual(['read3'], [read.query_name for read in reads])
+
+    def test_count_bam(self):
+        self.assertEqual(2, bam.count_bam(self.bam_path))
+
+    def test_count_bam_filter(self):
+        self.assertEqual(0, bam.count_bam(self.bam_path, lambda al: False))
