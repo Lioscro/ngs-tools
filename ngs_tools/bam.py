@@ -1,4 +1,5 @@
-from typing import Any, Callable, Optional
+from collections import Counter
+from typing import Any, Callable, Dict, Optional, Tuple
 
 import pysam
 from tqdm import tqdm
@@ -66,6 +67,184 @@ def apply_bam(
     return out_path
 
 
+def count_bam(
+    bam_path: str,
+    filter_func: Optional[Callable[[pysam.AlignedSegment], bool]] = None,
+    n_threads: int = 1,
+) -> int:
+    """Count the number of BAM entries. Optionally, a function may be provided to
+    only count certain alignments.
+
+    Args:
+        bam_path: Path to BAM
+        filter_func: Function that takes a :class:`pysam.AlignedSegment` object and
+            returns True for reads to be counted and False otherwise
+        n_threads: Number of threads to use. Defaults to 1.
+
+    Returns:
+        Number of alignments in BAM
+    """
+    with pysam.AlignmentFile(bam_path, 'rb', check_sq=False,
+                             threads=n_threads) as f:
+        try:
+            n = 0
+            for index in f.get_index_statistics():
+                n += index.total
+            return n
+        except ValueError:
+            pass
+    return sum(
+        map_bam(
+            bam_path, filter_func or (lambda al: True), n_threads=n_threads
+        )
+    )
+
+
+def split_bam(
+    bam_path: str,
+    split_prefix: str,
+    split_func: Optional[Callable[[pysam.AlignedSegment], str]] = None,
+    n: Optional[int] = None,
+    n_threads: int = 1,
+    check_pair_groups: bool = True,
+) -> Dict[str, Tuple[str, int]]:
+    """Split a BAM into many parts, either by the number of reads or by an
+    arbitrary function. Only one of ``split_func`` or ``n`` must be provided.
+    Read pairs are always written to the same file.
+
+    This function makes two passes through the BAM file. The first pass is to
+    identify which reads must be written together (i.e. are pairs). The second
+    pass is to actually extract the reads and write them to the appropriate split.
+
+    The following procedure is used to identify pairs.
+    1) The ``.is_paired`` property is checked to be True.
+    2) If the read is uanligned, at most one other unaligned read with the same
+       read name is allowed to be in the BAM. This other read is its mate.
+       If the read is aligned, it MUST have the ``HI`` BAM tag indicating the
+       alignment index. If any of these constraints are not met, an exception is
+       raised.
+
+    Args:
+        bam_path: Path to the BAM file
+        split_prefix: File path prefix to all the split BAMs
+        split_func: Function that takes a :class:`pysam.AlignedSegment` object and
+            returns a string ID that is used to group reads into splits. All reads
+            with a given ID will be written to a single BAM. Defaults to None.
+        n: Number of BAMs to split into. Defaults to None.
+        n_threads: Number of threads to use. Only affects reading. Writing is
+            still serialized. Defaults to 1.
+        check_pair_groups: When using ``split_func``, make sure that paired reads
+            are assigned the same ID (and thus are split into the same BAM).
+            Defaults to True.
+
+    Returns:
+        Dictionary of tuples, where the first element is the path to a split BAM,
+        and the second element is the number of BAM entries written to that split.
+        The keys are either the string ID of each split (if ``split_func`` is used)
+        or the split index (if ``n`` is used), and the values are paths.
+
+    Raises:
+        BamError: If any pair constraints are not met.
+    """
+    if (split_func is None) == (n is None):
+        raise BamError('Exactly one of `split_func` or `n` must be provided.')
+
+    n_reads = 0
+    read_indices = []
+
+    # Temporary dict that hold paired reads that we have only found one mate for
+    pairs_cache = {}
+    # Group ids for every read in order they appear in the BAM
+    group_ids = []
+    # Pairs that have been added
+    pairs_added = set()
+
+    # First, determine which reads should go to which split.
+    with pysam.AlignmentFile(bam_path, 'rb', check_sq=False,
+                             threads=n_threads) as f:
+        for i, read in enumerate(f.fetch(until_eof=True)):
+            n_reads += 1
+            read_name = read.query_name
+
+            group_id = None if not split_func else split_func(read)
+            group_ids.append(group_id)
+
+            if read.is_paired:
+                alignment_index = None if read.is_unmapped else read.get_tag(
+                    'HI'
+                )
+                key = (read_name, alignment_index)
+                if key in pairs_added:
+                    raise BamError(
+                        f'Found alignment for paired read {read_name} multiple times with '
+                        f'index {alignment_index} (`None` means unmapped).'
+                    )
+
+                if key in pairs_cache:
+                    mate_i = pairs_cache[key]
+                    if split_func and check_pair_groups and group_id != group_ids[
+                            mate_i]:
+                        raise BamError(
+                            f'Read {read_name} pairs are assigned different split IDs. '
+                            'Use `check_pair_groups=False` to turn off this check.'
+                        )
+                    read_indices.append((mate_i, i))
+                    del pairs_cache[key]
+                    pairs_added.add(key)
+                else:
+                    pairs_cache[key] = i
+            else:
+                read_indices.append(i)
+
+    # Make sure all paired reads have been covered
+    if pairs_cache:
+        raise BamError('Some paired reads do not have mates.')
+
+    # When just splitting by using n, group_id is just an incrementing integer
+    if not split_func:
+        n_split = n_reads // n
+        n_current = 0
+        current_group = 0
+        for idx in read_indices:
+            if isinstance(idx, tuple):
+                group_ids[idx[0]] = group_ids[idx[1]] = str(current_group)
+                n_current += 2
+            else:
+                group_ids[idx] = str(current_group)
+                n_current += 1
+
+            if n_current > n_split:
+                n_current = 0
+                current_group += 1
+
+    # Open a new file for each split.
+    split_paths = {
+        group_id: f'{split_prefix}_{group_id}.bam'
+        for group_id in set(group_ids)
+    }
+    split_counts = Counter(group_ids)
+    with pysam.AlignmentFile(bam_path, 'rb', check_sq=False,
+                             threads=n_threads) as f:
+        split_outs = {}
+        try:
+            for group_id, path in split_paths.items():
+                split_outs[group_id] = pysam.AlignmentFile(
+                    path, 'wb', template=f, threads=n_threads
+                )
+
+            for i, read in tqdm(enumerate(f.fetch(until_eof=True)),
+                                total=n_reads, desc='Splitting BAM',
+                                smoothing=0):
+                split_outs[group_ids[i]].write(read)
+        finally:
+            for out in split_outs.values():
+                out.close()
+    return {
+        group_id: (path, split_counts[group_id])
+        for group_id, path in split_paths.items()
+    }
+
+
 def tag_bam_with_fastq(
     bam_path: str,
     fastq_path: str,
@@ -81,7 +260,7 @@ def tag_bam_with_fastq(
     Args:
         bam_path: Path to the BAM file
         fastq_path: Path to FASTQ file
-        tag_func: Function that takes a :class:`pysam.AlignedSegment` object and
+        tag_func: Function that takes a :class:`ngs_tools.fastq.Read` object and
             returns a dictionary of tags
         out_path: Path to output BAM file
         check_name: Whether or not to raise a :class:`BamError` if the FASTQ does not

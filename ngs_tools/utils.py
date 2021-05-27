@@ -1,5 +1,6 @@
 import gzip
 import os
+import tempfile
 from abc import abstractmethod
 from typing import Any, Optional, TextIO
 
@@ -15,21 +16,20 @@ class ParallelWithProgress(Parallel):
 
     def __init__(
         self,
-        use_tqdm: bool = True,
+        pbar: Optional[tqdm] = None,
         total: Optional[int] = None,
         desc: Optional[str] = None,
         *args,
         **kwargs
     ):
-        self._use_tqdm = use_tqdm
-        self._total = total
-        self._desc = desc
-        super().__init__(*args, **kwargs)
+        self._pbar = pbar or tqdm(total=total, desc=desc, smoothing=0)
+        super(ParallelWithProgress, self).__init__(*args, **kwargs)
 
     def __call__(self, *args, **kwargs):
-        with tqdm(disable=not self._use_tqdm, total=self._total, smoothing=0,
-                  desc=self._desc) as self._pbar:
+        try:
             return Parallel.__call__(self, *args, **kwargs)
+        finally:
+            self._pbar.close()
 
     def print_progress(self):
         self._pbar.n = self.n_completed_tasks
@@ -110,7 +110,7 @@ class FileWrapper:
         self._open()
 
     @property
-    def is_gzip(self):
+    def is_gzip(self) -> bool:
         """Whether or not the file is gzipped"""
         return is_gzip(self.path)
 
@@ -158,3 +158,24 @@ class FileWrapper:
     def write(self, entry: Any):
         """Write a single entry. This method must be overridden by children."""
         pass
+
+
+def mkstemp(dir: Optional[str] = None, delete: bool = False):
+    """Wrapper for :func:`tempfile.mkstemp` that automatically closes the OS-level
+    file descriptor. This function behaves like :func:`tempfile.mkdtemp` but for
+    files.
+
+    Args:
+        dir: Directory to create the temporary file. This value is passed as
+            the ``dir`` kwarg of :func:`tempfile.mkstemp`. Defaults to None.
+        delete: Whether to delete the temporary file before returning.
+            Defaults to False.
+
+    Returns:
+        path to the temporary file
+    """
+    fd, path = tempfile.mkstemp(dir=dir)
+    os.close(fd)
+    if delete:
+        os.remove(path)
+    return path

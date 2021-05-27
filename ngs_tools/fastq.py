@@ -19,7 +19,7 @@ class Quality:
     """Represents a Phred33 quality string.
 
     Attributes:
-        _string: Raw quality string; for internal use only. Use ``string`` instead.
+        _string: Raw quality string; for internal use only. Use :attr:`string` instead.
     """
 
     def __init__(self, qualities: str):
@@ -30,19 +30,23 @@ class Quality:
         self._string = qualities
 
     @property
-    def string(self):
+    def string(self) -> str:
         """Raw quality string"""
         return self._string
 
     @property
-    def values(self):
+    def values(self) -> str:
         """List of quality values"""
         return list(pysam.qualitystring_to_array(self._string))
 
     @property
-    def probs(self):
+    def probs(self) -> str:
         """The quality values converted to probabilities of error"""
         return [10**(-q / 10) for q in self.values]
+
+    def __getitem__(self, sl: slice) -> 'Quality':
+        """Return a slice of the :class:`Quality`"""
+        return Quality(self.string[sl])
 
 
 class Read:
@@ -52,13 +56,11 @@ class Read:
 
     Attributes:
         _header: Raw header string, including the ``@``; for internal use only.
-            Use ``header`` instead.
-        _sequence: Raw sequence string; for internal use only. Use ``sequence`` instead.
+            Use :attr:`header` instead.
+        _sequence: Raw sequence string; for internal use only. Use :attr:`sequence` instead.
         _qualities: :class:`Quality` instance representing the sequence qualities;
-            for internal use only. Use ``qualities`` instead.
+            for internal use only. Use :attr:`qualities` instead.
 
-    Raises:
-        ReadError: if the ``header`` does not start with ``@``
     """
 
     def __init__(self, header: str, sequence: str, qualities: str):
@@ -67,6 +69,9 @@ class Read:
             header: Raw header string, including the ``@``
             sequence: Raw sequence string
             qualities: Raw qualities string
+
+        Raises:
+            ReadError: if the ``header`` does not start with ``@``
         """
         if not header.startswith('@'):
             raise ReadError(f'FASTQ header `{header}` does not start with `@`')
@@ -76,28 +81,28 @@ class Read:
         self._qualities = Quality(qualities.strip())
 
     @property
-    def header(self):
+    def header(self) -> str:
         """Raw header string"""
         return self._header
 
     @property
-    def sequence(self):
+    def sequence(self) -> str:
         """Raw sequence string"""
         return self._sequence
 
     @property
-    def qualities(self):
+    def qualities(self) -> str:
         """:class:`Quality` instance representing the sequence qualities"""
         return self._qualities
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Name of the sequence, which comes immediately after the ``@``"""
         return self.header[1:self.header.index(' ')
                            ] if ' ' in self.header else self.header[1:]
 
     @property
-    def attributes(self):
+    def attributes(self) -> str:
         """String of read attributes. This is the substring after the first space in the header."""
         return self.header[self.header.index(' ') +
                            1:] if ' ' in self.header else ''
