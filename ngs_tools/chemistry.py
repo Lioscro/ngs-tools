@@ -1,3 +1,4 @@
+import itertools
 import os
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -70,6 +71,32 @@ class SubSequenceDefinition:
         """Substring length. None if not provided on initialization."""
         return self._length
 
+    def is_overlapping(self, other: 'SubSequenceDefinition') -> bool:
+        """Whether this subsequence overlaps with another subsequence.
+
+        Args:
+            other: The other :class:`SubSequenceDefinition` instance to compare to
+
+        Returns:
+            True if they are overlapping. False otherwise.
+        """
+        if self.index != other.index:
+            return False
+
+        # Same index
+        if self.start is None or other.start is None:  # This is the whole string
+            return True
+
+        # Neither of the start positions are None
+        if self.end is None and other.end is None:
+            return True
+        elif self.end is not None and other.end is None:
+            return self.end > other.start
+        elif self.end is None and other.end is not None:
+            return self.start < other.end
+        else:  # Neither ends are None
+            return not (self.start >= other.end or self.end <= other.start)
+
     def parse(self, s: List[str]) -> str:
         """Parse the given list of strings according to the arguments used to
         initialize this instance. If :attr:`start` and :attr:`length` was not provided, then
@@ -116,6 +143,23 @@ class SubSequenceParser:
                 iteratively parse a list of sequences.
         """
         self._definitions = definitions
+
+    def is_overlapping(self, other: 'SubSequenceParser') -> bool:
+        """Whether this parser overlaps with another parser. Checks all pairwise
+        combinations and returns True if any two :class:`SubSequenceDefinition`
+        instances overlap.
+
+        Args:
+            other: The other :class:`SubSequenceParser` instance to compare to
+
+        Returns:
+            True if they are overlapping. False otherwise.
+        """
+        for parser1, parser2 in itertools.product(self._definitions,
+                                                  other._definitions):
+            if parser1.is_overlapping(parser2):
+                return True
+        return False
 
     def parse(self,
               sequences: List[str],
@@ -425,6 +469,75 @@ _DROPSEQ = SingleCellChemistry(
     umi_parser=SubSequenceParser(SubSequenceDefinition(0, 12, 8)),
     whitelist_path=os.path.join(WHITELISTS_DIR, '10x_version3.txt.gz'),
 )
+_CELSEQ_V1 = SingleCellChemistry(
+    name='CEL-Seq',
+    description='Hashimshony et al. 2012',
+    n=2,
+    cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
+    cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 8)),
+    umi_parser=SubSequenceParser(SubSequenceDefinition(0, 8, 4)),
+)
+_CELSEQ_V2 = SingleCellChemistry(
+    name='CEL-Seq2',
+    description='Hashimshony et al. 2016',
+    n=2,
+    cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
+    cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 6, 6)),
+    umi_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 6)),
+)
+_INDROPS_V1 = SingleCellChemistry(
+    name='inDropsv1',
+    description='Zilionis et al. 2017',
+    n=2,
+    cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
+    cell_barcode_parser=SubSequenceParser(
+        SubSequenceDefinition(0, 0, 11), SubSequenceDefinition(0, 30, 8)
+    ),
+    umi_parser=SubSequenceParser(SubSequenceDefinition(0, 42, 6)),
+)
+_INDROPS_V2 = SingleCellChemistry(
+    name='inDropsv2',
+    description='Zilionis et al. 2017',
+    n=2,
+    cdna_parser=SubSequenceParser(SubSequenceDefinition(0)),
+    cell_barcode_parser=SubSequenceParser(
+        SubSequenceDefinition(1, 0, 11), SubSequenceDefinition(1, 30, 8)
+    ),
+    umi_parser=SubSequenceParser(SubSequenceDefinition(1, 42, 6)),
+)
+_INDROPS_V3 = SingleCellChemistry(
+    name='inDropsv3',
+    description='Zilionis et al. 2017',
+    n=3,
+    cdna_parser=SubSequenceParser(SubSequenceDefinition(2)),
+    cell_barcode_parser=SubSequenceParser(
+        SubSequenceDefinition(0, 0, 8), SubSequenceDefinition(1, 0, 8)
+    ),
+    umi_parser=SubSequenceParser(SubSequenceDefinition(1, 8, 6)),
+    whitelist_path=os.path.join(WHITELISTS_DIR, 'indrops_version3.txt.gz')
+)
+_SCRBSEQ = SingleCellChemistry(
+    name='SCRB-seq',
+    description='Soumillon et al. 2014',
+    n=2,
+    cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
+    cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 6)),
+    umi_parser=SubSequenceParser(SubSequenceDefinition(0, 6, 10)),
+)
+_SURECELL = SingleCellChemistry(
+    name='SureCell',
+    description=(
+        'Illumina Bio-Rad SureCell WTA 3\' with ddSEQ Single-Cell Isolator'
+    ),
+    n=2,
+    cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
+    cell_barcode_parser=SubSequenceParser(
+        SubSequenceDefinition(0, 0, 6), SubSequenceDefinition(0, 21, 6),
+        SubSequenceDefinition(0, 42, 6)
+    ),
+    umi_parser=SubSequenceParser(SubSequenceDefinition(0, 51, 8)),
+)
+
 _SMARTSEQ_V2 = SingleCellChemistry(
     name='Smart-seq2',
     description=(
@@ -446,9 +559,27 @@ _SMARTSEQ_V3 = SingleCellChemistry(
     ),
     umi_parser=SubSequenceParser(SubSequenceDefinition(0, 11, 8)),
 )
-_SINGLE_CELL_CHEMISTRIES = [
-    _DROPSEQ, _10X_V1, _10X_V2, _10X_V3, _SMARTSEQ_V2, _SMARTSEQ_V3
+_SCI_FATE = SingleCellChemistry(
+    name='Sci-fate',
+    description=(
+        'Single-cell RNA-seq chemistry for metabolic labeling developed by Cao et al. 2020'
+    ),
+    n=2,
+    cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
+    cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 8, 10)),
+    umi_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 8)),
+    whitelist_path=os.path.join(WHITELISTS_DIR, 'sci_fate.txt.gz'),
+)
+_PLATE_SINGLE_CELL_CHEMISTRIES = [_SMARTSEQ_V2, _SMARTSEQ_V3]
+_DROPLET_SINGLE_CELL_CHEMISTRIES = [
+    _DROPSEQ, _10X_V1, _10X_V2, _10X_V3, _INDROPS_V1, _INDROPS_V2, _INDROPS_V3,
+    _SURECELL, _SCI_FATE
 ]
+_OTHER_SINGLE_CELL_CHEMISTRIES = [_CELSEQ_V1, _CELSEQ_V2, _SCRBSEQ]
+_SINGLE_CELL_CHEMISTRIES = (
+    _PLATE_SINGLE_CELL_CHEMISTRIES + _DROPLET_SINGLE_CELL_CHEMISTRIES +
+    _OTHER_SINGLE_CELL_CHEMISTRIES
+)
 
 # Spatial chemistry definitions
 _SLIDESEQ_V2 = SpatialChemistry(
