@@ -240,9 +240,6 @@ _DROPSEQ = SingleCellChemistry(
     cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
     cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 12)),
     umi_parser=SubSequenceParser(SubSequenceDefinition(0, 12, 8)),
-    whitelist_path=os.path.join(
-        WHITELISTS_DIR, '10x_version3_whitelist.txt.gz'
-    ),
 )
 _CELSEQ_V1 = SingleCellChemistry(
     name='CEL-Seq',
