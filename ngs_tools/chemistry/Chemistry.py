@@ -253,7 +253,7 @@ class SubSequenceParser:
         return f'{self.__class__.__name__} {self._definitions}'
 
     def __str__(self):
-        return ':'.join(str(definition) for definition in self._definitions)
+        return ' '.join(str(definition) for definition in self._definitions)
 
 
 class ChemistryError(Exception):

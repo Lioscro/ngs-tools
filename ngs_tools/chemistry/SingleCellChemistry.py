@@ -201,7 +201,9 @@ _10X_V1 = SingleCellChemistry(
     cdna_parser=SubSequenceParser(SubSequenceDefinition(2)),
     cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 14)),
     umi_parser=SubSequenceParser(SubSequenceDefinition(1, 0, 10)),
-    whitelist_path=os.path.join(WHITELISTS_DIR, '10x_version1.txt.gz'),
+    whitelist_path=os.path.join(
+        WHITELISTS_DIR, '10x_version1_whitelist.txt.gz'
+    ),
 )
 
 _10X_V2 = SingleCellChemistry(
@@ -211,7 +213,9 @@ _10X_V2 = SingleCellChemistry(
     cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
     cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 16)),
     umi_parser=SubSequenceParser(SubSequenceDefinition(0, 16, 10)),
-    whitelist_path=os.path.join(WHITELISTS_DIR, '10x_version2.txt.gz'),
+    whitelist_path=os.path.join(
+        WHITELISTS_DIR, '10x_version2_whitelist.txt.gz'
+    ),
 )
 _10X_V3 = SingleCellChemistry(
     name='10xv3',
@@ -220,7 +224,9 @@ _10X_V3 = SingleCellChemistry(
     cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
     cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 16)),
     umi_parser=SubSequenceParser(SubSequenceDefinition(0, 16, 12)),
-    whitelist_path=os.path.join(WHITELISTS_DIR, '10x_version3.txt.gz'),
+    whitelist_path=os.path.join(
+        WHITELISTS_DIR, '10x_version3_whitelist.txt.gz'
+    ),
     feature_map_path=os.path.join(
         WHITELISTS_DIR, '10x_version3_feature_map.txt.gz'
     )
@@ -234,7 +240,9 @@ _DROPSEQ = SingleCellChemistry(
     cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
     cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 12)),
     umi_parser=SubSequenceParser(SubSequenceDefinition(0, 12, 8)),
-    whitelist_path=os.path.join(WHITELISTS_DIR, '10x_version3.txt.gz'),
+    whitelist_path=os.path.join(
+        WHITELISTS_DIR, '10x_version3_whitelist.txt.gz'
+    ),
 )
 _CELSEQ_V1 = SingleCellChemistry(
     name='CEL-Seq',
@@ -281,7 +289,9 @@ _INDROPS_V3 = SingleCellChemistry(
         SubSequenceDefinition(0, 0, 8), SubSequenceDefinition(1, 0, 8)
     ),
     umi_parser=SubSequenceParser(SubSequenceDefinition(1, 8, 6)),
-    whitelist_path=os.path.join(WHITELISTS_DIR, 'indrops_version3.txt.gz')
+    whitelist_path=os.path.join(
+        WHITELISTS_DIR, 'indrops_version3_whitelist.txt.gz'
+    )
 )
 _SCRBSEQ = SingleCellChemistry(
     name='SCRB-seq',
@@ -335,7 +345,7 @@ _SCI_FATE = SingleCellChemistry(
     cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
     cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 8, 10)),
     umi_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 8)),
-    whitelist_path=os.path.join(WHITELISTS_DIR, 'sci_fate.txt.gz'),
+    whitelist_path=os.path.join(WHITELISTS_DIR, 'sci_fate_whitelist.txt.gz'),
 )
 _PLATE_SINGLE_CELL_CHEMISTRIES = [_SMARTSEQ_V2, _SMARTSEQ_V3]
 _DROPLET_SINGLE_CELL_CHEMISTRIES = [

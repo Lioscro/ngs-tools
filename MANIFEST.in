@@ -1,1 +1,1 @@
-recursive-include ngs_tools/whitelists *
+recursive-include ngs_tools/chemistry/whitelists *
