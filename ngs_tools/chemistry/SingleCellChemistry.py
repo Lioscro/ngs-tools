@@ -27,6 +27,7 @@ class SingleCellChemistry(Chemistry):
         cell_barcode_parser: Optional[SubSequenceParser] = None,
         umi_parser: Optional[SubSequenceParser] = None,
         whitelist_path: Optional[str] = None,
+        feature_map_path: Optional[str] = None,
     ):
         parsers = {'cdna': cdna_parser}
         if cell_barcode_parser is not None:
@@ -34,8 +35,14 @@ class SingleCellChemistry(Chemistry):
         if umi_parser is not None:
             parsers['umi'] = umi_parser
 
-        super(SingleCellChemistry, self).__init__(name, description, n, parsers)
-        self._whitelist_path = whitelist_path
+        files = {}
+        if whitelist_path is not None:
+            files['whitelist'] = whitelist_path
+        if feature_map_path is not None:
+            files['feature_map'] = feature_map_path
+
+        super(SingleCellChemistry,
+              self).__init__(name, description, n, parsers, files)
 
     @property
     def cell_barcode_parser(self) -> SubSequenceParser:
@@ -65,12 +72,22 @@ class SingleCellChemistry(Chemistry):
     @property
     def has_whitelist(self) -> bool:
         """Whether the chemistry has a fixed predefined cell barcode whitelist"""
-        return self._whitelist_path is not None
+        return self.has_file('whitelist')
 
     @property
-    def whitelist_path(self) -> Optional[str]:
-        """Path to the whitelist. None if it does not exist."""
-        return self._whitelist_path
+    def whitelist_path(self) -> str:
+        """Path to the whitelist"""
+        return self.get_file('whitelist')
+
+    @property
+    def has_feature_map(self) -> bool:
+        """Whether the chemistry has a feature barcode map"""
+        return self.has_file('feature_map')
+
+    @property
+    def feature_map_path(self) -> str:
+        """Path to the feature map"""
+        return self.get_file('feature_map')
 
     def to_kallisto_bus_arguments(self) -> Dict[str, str]:
         """Convert this single-cell chemistry definition to arguments that
@@ -204,6 +221,9 @@ _10X_V3 = SingleCellChemistry(
     cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 16)),
     umi_parser=SubSequenceParser(SubSequenceDefinition(0, 16, 12)),
     whitelist_path=os.path.join(WHITELISTS_DIR, '10x_version3.txt.gz'),
+    feature_map_path=os.path.join(
+        WHITELISTS_DIR, '10x_version3_feature_map.txt.gz'
+    )
 )
 _DROPSEQ = SingleCellChemistry(
     name='Drop-seq',

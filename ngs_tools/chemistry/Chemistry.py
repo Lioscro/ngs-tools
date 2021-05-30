@@ -273,11 +273,17 @@ class Chemistry:
         _parsers: Dictionary containing :class:`SubSequenceParser` instances used to
             parse each group of :attr:`n` sequences. Each key represents a unique
             subsequence, such as cell barcode, UMI, etc. For internal use only.
+        _files: Dictionary containing files related to this chemistry. For internal
+            use only.
     """
 
     def __init__(
-        self, name: str, description: str, n: int,
-        parsers: Dict[str, SubSequenceParser]
+        self,
+        name: str,
+        description: str,
+        n: int,
+        parsers: Dict[str, SubSequenceParser],
+        files: Optional[Dict[str, str]] = None,
     ):
         """
         Args:
@@ -285,11 +291,21 @@ class Chemistry:
             description: Chemistry description
             n: Number of sequences
             parsers: Dictionary of parsers
+            files: Dictionary of files
+
+        Raises:
+            ChemistryError: If any of the provided files do not exist
         """
         self._name = name
         self._description = description
         self._n = n
         self._parsers = parsers
+        self._files = files or {}
+
+        # Check that all files exist
+        for path in self._files.values():
+            if not os.path.isfile(path):
+                raise ChemistryError(f'File {path} does not exist')
 
     @property
     def name(self) -> str:
@@ -307,12 +323,20 @@ class Chemistry:
         return self._n
 
     def get_parser(self, name: str) -> SubSequenceParser:
-        """Get a :class:`SubSequenceParser` by its name."""
+        """Get a :class:`SubSequenceParser` by its name"""
         return self._parsers[name]
 
     def has_parser(self, name: str) -> bool:
         """Whether :attr:`_parsers` contains a parser with the specified name"""
         return name in self._parsers
+
+    def has_file(self, name: str) -> bool:
+        """Whether :attr:`_files` contains a file with the specified name"""
+        return name in self._files
+
+    def get_file(self, name: str) -> bool:
+        """Get a file path by its name"""
+        return self._files[name]
 
     def parse(self,
               sequences: List[str],
