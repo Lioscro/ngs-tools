@@ -1,11 +1,16 @@
+import copy
 import itertools
 import os
 from typing import Dict, List, Optional, Tuple, Union
 
-from . import fastq
+from .. import fastq
+
+WHITELISTS_DIR = os.path.join(
+    os.path.abspath(os.path.dirname(__file__)), 'whitelists'
+)
 
 
-class ChemistryError(Exception):
+class SubSequenceDefinitionError(Exception):
     pass
 
 
@@ -13,11 +18,13 @@ class SubSequenceDefinition:
     """Definition of a subsequence. This class is used to parse a subsequence out from
     a list of sequences.
 
+    TODO: anchoring
+
     Attributes:
         _index: Sequence index to use (from a list of sequences); for internal use only.
             Use :attr:`index` instead.
         _start: Starting position of the subsequence; for internal use only.
-            Use :attra:`start` instead.
+            Use :attr:`start` instead.
         _length: Length of the subsequence; for internal use only. Use ``length`` instead.
 
     """
@@ -37,15 +44,15 @@ class SubSequenceDefinition:
                 ``start`` must also be provided.
 
         Raises:
-            ChemistryError: if only one of ``start`` or ``length`` is provided
+            SubSequenceDefinitionError: if only one of ``start`` or ``length`` is provided
         """
         # If length is provided, start must be provided.
         if length is not None and start is None:
-            raise ChemistryError(
+            raise SubSequenceDefinitionError(
                 '`start` must be provided if `length` is provided'
             )
         if length is not None and length < 1:
-            raise ChemistryError('`length` must be greater than 0')
+            raise SubSequenceDefinitionError('`length` must be greater than 0')
 
         self._index = index
         self._start = start
@@ -120,11 +127,19 @@ class SubSequenceDefinition:
             raise IndexError('string index out of range')
         return s[self.index][self.start:self.end]
 
+    def __eq__(self, other: 'SubSequenceDefinition'):
+        return (self.index, self.start,
+                self.end) == (other.index, other.start, other.end)
+
     def __repr__(self):
         return f'{self.__class__.__name__} {(self.index, self.start, self.end)}'
 
     def __str__(self):
         return f'{self.index},{self.start},{self.end}'
+
+
+class SubSequenceParserError(Exception):
+    pass
 
 
 class SubSequenceParser:
@@ -143,6 +158,10 @@ class SubSequenceParser:
                 iteratively parse a list of sequences.
         """
         self._definitions = definitions
+
+    @property
+    def definitions(self):
+        return copy.deepcopy(self._definitions)
 
     def is_overlapping(self, other: 'SubSequenceParser') -> bool:
         """Whether this parser overlaps with another parser. Checks all pairwise
@@ -210,11 +229,35 @@ class SubSequenceParser:
         return self.parse(sequences,
                           concatenate), self.parse(qualities, concatenate)
 
+    def __eq__(self, other: 'SubSequenceParser'):
+        """Check whether this parser equals another. The order of definitions
+        must also be equal.
+        """
+        return (
+            len(self._definitions) == len(other._definitions) and all(
+                def1 == def2
+                for def1, def2 in zip(self._definitions, other._definitions)
+            )
+        )
+
+    def __iter__(self):
+        return iter(self.definitions)
+
+    def __len__(self):
+        return len(self._definitions)
+
+    def __getitem__(self, i):
+        return copy.deepcopy(self._definitions[i])
+
     def __repr__(self):
         return f'{self.__class__.__name__} {self._definitions}'
 
     def __str__(self):
         return ':'.join(str(definition) for definition in self._definitions)
+
+
+class ChemistryError(Exception):
+    pass
 
 
 class Chemistry:
@@ -262,6 +305,10 @@ class Chemistry:
     def n(self) -> int:
         """Number of sequences to parse at once"""
         return self._n
+
+    def get_parser(self, name: str) -> SubSequenceParser:
+        """Get a :class:`SubSequenceParser` by its name."""
+        return self._parsers[name]
 
     def has_parser(self, name: str) -> bool:
         """Whether :attr:`_parsers` contains a parser with the specified name"""
@@ -330,279 +377,12 @@ class Chemistry:
             parsed[key] = parser.parse_reads(reads, concatenate)
         return parsed
 
+    def __eq__(self, other: 'Chemistry'):
+        """Check the equality of two chemistries by comparing each parser."""
+        return self.n == other.n and self._parsers == other._parsers
+
     def __str__(self):
         return self.description
 
     def __repr__(self):
         return f'{self.__class__.__name__} {self.name} {self.parsers}'
-
-
-class SingleCellChemistry(Chemistry):
-    """Extends :class:`Chemistry` to be able to handle common single-cell
-    chemistries.
-    """
-
-    def __init__(
-        self,
-        name: str,
-        description: str,
-        n: int,
-        cdna_parser: SubSequenceParser,
-        cell_barcode_parser: Optional[SubSequenceParser] = None,
-        umi_parser: Optional[SubSequenceParser] = None,
-        whitelist_path: Optional[str] = None,
-    ):
-        parsers = {'cdna': cdna_parser}
-        if cell_barcode_parser is not None:
-            parsers['cell_barcode'] = cell_barcode_parser
-        if umi_parser is not None:
-            parsers['umi'] = umi_parser
-
-        super(SingleCellChemistry, self).__init__(name, description, n, parsers)
-        self._whitelist_path = whitelist_path
-
-    @property
-    def has_cell_barcode(self) -> bool:
-        """Whether the chemistry has a cell barcode"""
-        return self.has_parser('cell_barcode')
-
-    @property
-    def has_umi(self) -> bool:
-        """Whether the chemistry has a UMI"""
-        return self.has_parser('umi')
-
-    @property
-    def has_whitelist(self) -> bool:
-        """Whether the chemistry has a fixed predefined cell barcode whitelist"""
-        return self._whitelist_path is not None
-
-    @property
-    def whitelist_path(self) -> Optional[str]:
-        """Path to the whitelist. None if it does not exist."""
-        return self._whitelist_path
-
-
-class SpatialChemistry(Chemistry):
-    """Extends :class:`Chemistry` to be able to handle common spatial chemistries.
-    """
-
-    def __init__(
-        self,
-        name: str,
-        description: str,
-        n: int,
-        cdna_parser: SubSequenceParser,
-        spot_barcode_parser: Optional[SubSequenceParser] = None,
-        umi_parser: Optional[SubSequenceParser] = None,
-        whitelist_path: Optional[str] = None,
-    ):
-        parsers = {'cdna': cdna_parser}
-        if spot_barcode_parser is not None:
-            parsers['spot_barcode'] = spot_barcode_parser
-        if umi_parser is not None:
-            parsers['umi'] = umi_parser
-
-        super(SpatialChemistry, self).__init__(name, description, n, parsers)
-        self._whitelist_path = whitelist_path
-
-    @property
-    def has_spot_barcode(self) -> bool:
-        """Whether the chemistry has a spot barcode"""
-        return self.has_parser('spot_barcode')
-
-    @property
-    def has_umi(self) -> bool:
-        """Whether the chemistry has a UMI"""
-        return self.has_parser('umi')
-
-    @property
-    def has_whitelist(self) -> bool:
-        """Whether the chemistry has a fixed predefined spot barcode whitelist"""
-        return self._whitelist_path is not None
-
-    @property
-    def whitelist_path(self) -> Optional[str]:
-        """Path to the whitelist. None if it does not exist."""
-        return self._whitelist_path
-
-
-WHITELISTS_DIR = os.path.join(
-    os.path.abspath(os.path.dirname(__file__)), 'whitelists'
-)
-
-# Single cell chemistry definitions
-_10X_V1 = SingleCellChemistry(
-    name='10xv1',
-    description='10x Genomics 3\' version 1',
-    n=3,
-    cdna_parser=SubSequenceParser(SubSequenceDefinition(2)),
-    cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 14)),
-    umi_parser=SubSequenceParser(SubSequenceDefinition(1, 0, 10)),
-    whitelist_path=os.path.join(WHITELISTS_DIR, '10x_version1.txt.gz'),
-)
-_10X_V2 = SingleCellChemistry(
-    name='10xv2',
-    description='10x Genomics 3\' version 2',
-    n=2,
-    cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
-    cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 16)),
-    umi_parser=SubSequenceParser(SubSequenceDefinition(0, 16, 10)),
-    whitelist_path=os.path.join(WHITELISTS_DIR, '10x_version2.txt.gz'),
-)
-_10X_V3 = SingleCellChemistry(
-    name='10xv3',
-    description='10x Genomics 3\' version 3',
-    n=2,
-    cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
-    cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 16)),
-    umi_parser=SubSequenceParser(SubSequenceDefinition(0, 16, 12)),
-    whitelist_path=os.path.join(WHITELISTS_DIR, '10x_version3.txt.gz'),
-)
-_DROPSEQ = SingleCellChemistry(
-    name='Drop-seq',
-    description=(
-        'Droplet-based single-cell RNA-seq chemistry developed by Macosko et al. 2015'
-    ),
-    n=2,
-    cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
-    cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 12)),
-    umi_parser=SubSequenceParser(SubSequenceDefinition(0, 12, 8)),
-    whitelist_path=os.path.join(WHITELISTS_DIR, '10x_version3.txt.gz'),
-)
-_CELSEQ_V1 = SingleCellChemistry(
-    name='CEL-Seq',
-    description='Hashimshony et al. 2012',
-    n=2,
-    cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
-    cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 8)),
-    umi_parser=SubSequenceParser(SubSequenceDefinition(0, 8, 4)),
-)
-_CELSEQ_V2 = SingleCellChemistry(
-    name='CEL-Seq2',
-    description='Hashimshony et al. 2016',
-    n=2,
-    cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
-    cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 6, 6)),
-    umi_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 6)),
-)
-_INDROPS_V1 = SingleCellChemistry(
-    name='inDropsv1',
-    description='Zilionis et al. 2017',
-    n=2,
-    cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
-    cell_barcode_parser=SubSequenceParser(
-        SubSequenceDefinition(0, 0, 11), SubSequenceDefinition(0, 30, 8)
-    ),
-    umi_parser=SubSequenceParser(SubSequenceDefinition(0, 42, 6)),
-)
-_INDROPS_V2 = SingleCellChemistry(
-    name='inDropsv2',
-    description='Zilionis et al. 2017',
-    n=2,
-    cdna_parser=SubSequenceParser(SubSequenceDefinition(0)),
-    cell_barcode_parser=SubSequenceParser(
-        SubSequenceDefinition(1, 0, 11), SubSequenceDefinition(1, 30, 8)
-    ),
-    umi_parser=SubSequenceParser(SubSequenceDefinition(1, 42, 6)),
-)
-_INDROPS_V3 = SingleCellChemistry(
-    name='inDropsv3',
-    description='Zilionis et al. 2017',
-    n=3,
-    cdna_parser=SubSequenceParser(SubSequenceDefinition(2)),
-    cell_barcode_parser=SubSequenceParser(
-        SubSequenceDefinition(0, 0, 8), SubSequenceDefinition(1, 0, 8)
-    ),
-    umi_parser=SubSequenceParser(SubSequenceDefinition(1, 8, 6)),
-    whitelist_path=os.path.join(WHITELISTS_DIR, 'indrops_version3.txt.gz')
-)
-_SCRBSEQ = SingleCellChemistry(
-    name='SCRB-seq',
-    description='Soumillon et al. 2014',
-    n=2,
-    cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
-    cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 6)),
-    umi_parser=SubSequenceParser(SubSequenceDefinition(0, 6, 10)),
-)
-_SURECELL = SingleCellChemistry(
-    name='SureCell',
-    description=(
-        'Illumina Bio-Rad SureCell WTA 3\' with ddSEQ Single-Cell Isolator'
-    ),
-    n=2,
-    cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
-    cell_barcode_parser=SubSequenceParser(
-        SubSequenceDefinition(0, 0, 6), SubSequenceDefinition(0, 21, 6),
-        SubSequenceDefinition(0, 42, 6)
-    ),
-    umi_parser=SubSequenceParser(SubSequenceDefinition(0, 51, 8)),
-)
-
-_SMARTSEQ_V2 = SingleCellChemistry(
-    name='Smart-seq2',
-    description=(
-        'Plate-based single-cell RNA-seq chemistry developed by Ramskold et al. 2012'
-    ),
-    n=2,
-    cdna_parser=SubSequenceParser(
-        SubSequenceDefinition(0), SubSequenceDefinition(1)
-    ),
-)
-_SMARTSEQ_V3 = SingleCellChemistry(
-    name='Smart-seq3',
-    description=(
-        'Plate-based single-cell RNA-seq chemistry developed by Picelli et al. 2014'
-    ),
-    n=2,
-    cdna_parser=SubSequenceParser(
-        SubSequenceDefinition(0, 11, None), SubSequenceDefinition(1)
-    ),
-    umi_parser=SubSequenceParser(SubSequenceDefinition(0, 11, 8)),
-)
-_SCI_FATE = SingleCellChemistry(
-    name='Sci-fate',
-    description=(
-        'Single-cell RNA-seq chemistry for metabolic labeling developed by Cao et al. 2020'
-    ),
-    n=2,
-    cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
-    cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 8, 10)),
-    umi_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 8)),
-    whitelist_path=os.path.join(WHITELISTS_DIR, 'sci_fate.txt.gz'),
-)
-_PLATE_SINGLE_CELL_CHEMISTRIES = [_SMARTSEQ_V2, _SMARTSEQ_V3]
-_DROPLET_SINGLE_CELL_CHEMISTRIES = [
-    _DROPSEQ, _10X_V1, _10X_V2, _10X_V3, _INDROPS_V1, _INDROPS_V2, _INDROPS_V3,
-    _SURECELL, _SCI_FATE
-]
-_OTHER_SINGLE_CELL_CHEMISTRIES = [_CELSEQ_V1, _CELSEQ_V2, _SCRBSEQ]
-_SINGLE_CELL_CHEMISTRIES = (
-    _PLATE_SINGLE_CELL_CHEMISTRIES + _DROPLET_SINGLE_CELL_CHEMISTRIES +
-    _OTHER_SINGLE_CELL_CHEMISTRIES
-)
-
-# Spatial chemistry definitions
-_SLIDESEQ_V2 = SpatialChemistry(
-    name='Slide-seqV2',
-    description=(
-        'Spatial transcriptomics chemistry developed by Stickels et al. 2020'
-    ),
-    n=2,
-    cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
-    spot_barcode_parser=SubSequenceParser(
-        SubSequenceDefinition(0, 0, 8), SubSequenceDefinition(0, 26, 6)
-    ),
-    umi_parser=SubSequenceParser(SubSequenceDefinition(0, 32, 9)),
-)
-_SPATIAL_CHEMISTRIES = [_SLIDESEQ_V2]
-
-_CHEMISTRIES = _SINGLE_CELL_CHEMISTRIES + _SPATIAL_CHEMISTRIES
-
-
-def get_chemistry(name: str):
-    for chemistry in _CHEMISTRIES:
-        if chemistry.name.replace('-', '').lower() == name.replace('-',
-                                                                   '').lower():
-            return chemistry
-
-    raise ChemistryError(f'Chemistry `{name}` not found')

@@ -226,9 +226,22 @@ class TestSegmentCollection(mixins.TestMixin, TestCase):
         self.assertEqual(3, len(collection1))
         self.assertEqual([segment1, segment2, segment3], collection1.segments)
 
+    def test_invert(self):
+        segment1 = gtf.Segment(0, 5)
+        segment2 = gtf.Segment(10, 15)
+        collection = gtf.SegmentCollection(segments=[segment1, segment2])
+        with self.assertRaises(gtf.SegmentCollectionError):
+            collection.invert(gtf.Segment(10, 30))
+
+        self.assertEqual(
+            gtf.SegmentCollection([gtf.Segment(5, 10),
+                                   gtf.Segment(15, 20)]),
+            collection.invert(gtf.Segment(0, 20))
+        )
+
     def test_collapse(self):
         collection = gtf.SegmentCollection()
-        collection.segments = [gtf.Segment(0, 10), gtf.Segment(5, 15)]
+        collection._segments = [gtf.Segment(0, 10), gtf.Segment(5, 15)]
         collection.collapse()
         self.assertEqual(1, len(collection))
         self.assertEqual(gtf.Segment(0, 15), collection.segments[0])
