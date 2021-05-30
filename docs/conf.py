@@ -37,7 +37,10 @@ extensions = [
 ]
 autoapi_type = 'python'
 autoapi_dirs = [ngs_tools_dir]
-autoapi_add_toctree_entry = False
+autoapi_options = [
+    'members', 'undoc-members', 'private-members', 'show-inheritance',
+    'show-module-summary', 'special-members'
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
