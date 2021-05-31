@@ -338,6 +338,26 @@ class Chemistry:
         """Get a file path by its name"""
         return self._files[name]
 
+    def reorder(self, reordering: List[int]) -> 'Chemistry':
+        """Reorder the file indices according to the ``reordering`` list. This
+        list reorders the file at each index to the value at that index.
+
+        Args:
+            reordering: List containing how to reorder file indices, where the
+                file at index ``i`` of this index will now be at index
+                ``reordering[i]``.
+
+        Returns:
+            A new :class:`Chemistry` instance (or the subclass)
+        """
+        reordered = copy.deepcopy(self)
+
+        for parser in reordered._parsers.values():
+            for _def in parser._definitions:
+                _def._index = reordering[_def._index]
+        reordered._n = max(reordering) + 1
+        return reordered
+
     def parse(self,
               sequences: List[str],
               concatenate: bool = False) -> Dict[str, Union[str, Tuple[str]]]:
@@ -409,4 +429,4 @@ class Chemistry:
         return self.description
 
     def __repr__(self):
-        return f'{self.__class__.__name__} {self.name} {self.parsers}'
+        return f'{self.__class__.__name__} {self.name} {self._parsers}'

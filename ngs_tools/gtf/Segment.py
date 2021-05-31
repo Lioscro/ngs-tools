@@ -135,4 +135,4 @@ class Segment:
         return (self.start, self.end) > (other.start, other.end)
 
     def __repr__(self):
-        return f'Segment {(self.start, self.end)}'
+        return f'{self.__class__.__name__} {(self.start, self.end)}'

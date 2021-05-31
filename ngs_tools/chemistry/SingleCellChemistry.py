@@ -143,6 +143,7 @@ class SingleCellChemistry(Chemistry):
             # This must be smartseq. All cDNA definitions must be the entire
             # read, and there can be at most two.
             args['--soloType'] = 'SmartSeq'
+            return args
 
         # Otherwise, cell barcode and UMI must exist and there must be a single
         # cDNA definition that uses the entire read.
