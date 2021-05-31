@@ -271,4 +271,4 @@ class SegmentCollection:
         return cls(segments=segments)
 
     def __repr__(self):
-        return f'SegmentCollection {self._segments}'
+        return f'{self.__class__.__name__} {self._segments}'

@@ -64,6 +64,23 @@ class TestSubSequenceParser(TestMixin, TestCase):
 
 class TestChemistry(TestMixin, TestCase):
 
+    def test_reorder(self):
+        def1 = chemistry.SubSequenceDefinition(0, 0, 1)
+        def2 = chemistry.SubSequenceDefinition(1, 1, None)
+        parser = chemistry.SubSequenceParser(def1, def2)
+        chem = chemistry.Chemistry(
+            'test', 'description', 2, {'testing': parser}
+        )
+        reordered = chem.reorder([1, 0])
+        self.assertEqual(2, reordered.n)
+        self.assertEqual({
+            'testing':
+                chemistry.SubSequenceParser(
+                    chemistry.SubSequenceDefinition(1, 0, 1),
+                    chemistry.SubSequenceDefinition(0, 1, None)
+                )
+        }, reordered._parsers)
+
     def test_parse(self):
         def1 = chemistry.SubSequenceDefinition(0, 0, 1)
         def2 = chemistry.SubSequenceDefinition(1, 1, None)
