@@ -13,7 +13,7 @@ class TestBam(TestMixin, TestCase):
     @classmethod
     def setUpClass(cls):
         super(TestBam, cls).setUpClass()
-        cls.tqdm_patch = mock.patch('ngs_tools.bam.tqdm', tqdm_mock)
+        cls.tqdm_patch = mock.patch('ngs_tools.bam.progress', tqdm_mock)
         cls.tqdm_patch.start()
 
     @classmethod

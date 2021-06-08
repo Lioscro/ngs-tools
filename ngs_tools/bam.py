@@ -2,9 +2,9 @@ from collections import Counter
 from typing import Any, Callable, Dict, Optional, Tuple
 
 import pysam
-from tqdm import tqdm
 
 from .fastq import Fastq, Read
+from .progress import progress
 
 
 class BamError(Exception):
@@ -14,7 +14,8 @@ class BamError(Exception):
 def map_bam(
     bam_path: str,
     map_func: Callable[[pysam.AlignedSegment], Any],
-    n_threads: int = 1
+    n_threads: int = 1,
+    show_progress: bool = False,
 ):
     """Generator to map an arbitrary function to every read and return its return
     values.
@@ -24,14 +25,15 @@ def map_bam(
         map_func: Function that takes a :class:`pysam.AlignedSegment` object and
             returns some value
         n_threads: Number of threads to use. Defaults to 1.
+        show_progress: Whether to display a progress bar. Defaults to False.
 
     Yields:
         ``map_func`` applied to each read in the BAM file
     """
     with pysam.AlignmentFile(bam_path, 'rb', threads=n_threads,
                              check_sq=False) as f:
-        for read in tqdm(f.fetch(until_eof=True), desc='Mapping BAM',
-                         smoothing=0):
+        for read in progress(f.fetch(until_eof=True), desc='Mapping BAM',
+                             disable=not show_progress):
             yield map_func(read)
 
 
@@ -41,6 +43,7 @@ def apply_bam(
                          Optional[pysam.AlignedSegment]],
     out_path: str,
     n_threads: int = 1,
+    show_progress: bool = False,
 ):
     """Apply an arbitrary function to every read in a BAM. Reads for which the
     function returns `None` are not written to the output BAM.
@@ -51,6 +54,7 @@ def apply_bam(
             optionally returns :class:`pysam.AlignedSegment` objects
         out_path: Path to output BAM file
         n_threads: Number of threads to use. Defaults to 1.
+        show_progress: Whether to display a progress bar. Defaults to False.
 
     Returns:
         Path to written BAM
@@ -59,8 +63,9 @@ def apply_bam(
                              check_sq=False) as f_in:
         with pysam.AlignmentFile(out_path, 'wb', template=f_in,
                                  threads=n_threads) as f_out:
-            for read in tqdm(f_in.fetch(until_eof=True), desc='Applying BAM',
-                             smoothing=0):
+            for read in progress(f_in.fetch(until_eof=True),
+                                 desc='Applying BAM',
+                                 disable=not show_progress):
                 result = apply_func(read)
                 if result is not None:
                     f_out.write(result)
@@ -71,6 +76,7 @@ def count_bam(
     bam_path: str,
     filter_func: Optional[Callable[[pysam.AlignedSegment], bool]] = None,
     n_threads: int = 1,
+    show_progress: bool = False,
 ) -> int:
     """Count the number of BAM entries. Optionally, a function may be provided to
     only count certain alignments.
@@ -80,6 +86,7 @@ def count_bam(
         filter_func: Function that takes a :class:`pysam.AlignedSegment` object and
             returns True for reads to be counted and False otherwise
         n_threads: Number of threads to use. Defaults to 1.
+        show_progress: Whether to display a progress bar. Defaults to False.
 
     Returns:
         Number of alignments in BAM
@@ -95,7 +102,10 @@ def count_bam(
             pass
     return sum(
         map_bam(
-            bam_path, filter_func or (lambda al: True), n_threads=n_threads
+            bam_path,
+            filter_func or (lambda al: True),
+            n_threads=n_threads,
+            show_progress=show_progress
         )
     )
 
@@ -107,6 +117,7 @@ def split_bam(
     n: Optional[int] = None,
     n_threads: int = 1,
     check_pair_groups: bool = True,
+    show_progress: bool = False,
 ) -> Dict[str, Tuple[str, int]]:
     """Split a BAM into many parts, either by the number of reads or by an
     arbitrary function. Only one of ``split_func`` or ``n`` must be provided.
@@ -136,6 +147,7 @@ def split_bam(
         check_pair_groups: When using ``split_func``, make sure that paired reads
             are assigned the same ID (and thus are split into the same BAM).
             Defaults to True.
+        show_progress: Whether to display a progress bar. Defaults to False.
 
     Returns:
         Dictionary of tuples, where the first element is the path to a split BAM,
@@ -232,9 +244,9 @@ def split_bam(
                     path, 'wb', template=f, threads=n_threads
                 )
 
-            for i, read in tqdm(enumerate(f.fetch(until_eof=True)),
-                                total=n_reads, desc='Splitting BAM',
-                                smoothing=0):
+            for i, read in progress(enumerate(f.fetch(until_eof=True)),
+                                    total=n_reads, desc='Splitting BAM',
+                                    disable=not show_progress):
                 split_outs[group_ids[i]].write(read)
         finally:
             for out in split_outs.values():
@@ -252,6 +264,7 @@ def tag_bam_with_fastq(
     out_path: str,
     check_name: bool = True,
     n_threads: int = 1,
+    show_progress: bool = False,
 ):
     """Add tags to BAM entries using sequences from a FASTQ file.
 
@@ -266,14 +279,18 @@ def tag_bam_with_fastq(
         check_name: Whether or not to raise a :class:`BamError` if the FASTQ does not
             contain a read in the BAM
         n_threads: Number of threads to use. Defaults to 1.
+        show_progress: Whether to display a progress bar. Defaults to False.
 
     Returns:
         Path to written BAM
     """
     tags = {
         read.name: tag_func(read)
-        for read in
-        tqdm(Fastq(fastq_path), smoothing=0, desc='Extracting tags')
+        for read in progress(
+            Fastq(fastq_path),
+            desc='Extracting tags',
+            disable=not show_progress
+        )
     }
 
     def apply_func(al: pysam.AlignedSegment):
@@ -283,7 +300,9 @@ def tag_bam_with_fastq(
             raise BamError(f'Missing read `{al.query_name}` in FASTQ')
         return al
 
-    return apply_bam(bam_path, apply_func, out_path, n_threads)
+    return apply_bam(
+        bam_path, apply_func, out_path, n_threads, show_progress=show_progress
+    )
 
 
 def filter_bam(
@@ -291,6 +310,7 @@ def filter_bam(
     filter_func: Callable[[pysam.AlignedSegment], bool],
     out_path: str,
     n_threads: int = 1,
+    show_progress: bool = False,
 ):
     """Filter a BAM by applying the given function to each :class:`pysam.AlignedSegment`
     object. When the function returns False, the read is not written to the output
@@ -304,11 +324,15 @@ def filter_bam(
             returns False for reads to be filtered out
         out_path: Path to output BAM file
         n_threads: Number of threads to use. Defaults to 1.
+        show_progress: Whether to display a progress bar. Defaults to False.
 
     Returns:
         Path to written BAM
     """
     return apply_bam(
-        bam_path, lambda al: None
-        if filter_func(al) is False else al, out_path, n_threads
+        bam_path,
+        lambda al: None if filter_func(al) is False else al,
+        out_path,
+        n_threads,
+        show_progress=show_progress
     )

@@ -8,9 +8,9 @@ import pysam
 from joblib import delayed
 from numba import njit
 from pyseq_align import NeedlemanWunsch
-from tqdm import tqdm
 
 from . import utils
+from .progress import progress
 
 NUCLEOTIDES_STRICT = ['A', 'C', 'G', 'T']
 NUCLEOTIDES_PERMISSIVE = [
@@ -567,7 +567,8 @@ def correct_sequences_to_whitelist(
     whitelist: List[str],
     d: int = 1,
     confidence: float = 0.95,
-    n_threads: int = 1
+    n_threads: int = 1,
+    show_progress: bool = False,
 ) -> List[Union[str, None]]:
     """Correct a list of sequences to a whitelist within `d` hamming distance.
     Note that `sequences` can contain duplicates, but `whitelist` can not.
@@ -599,6 +600,7 @@ def correct_sequences_to_whitelist(
             ratio of this and the sum of all likelihoods is greater than or equal to
             this value. Defaults to 0.95.
         n_threads: Number of threads to use. Defaults to 1.
+        show_progress: Whether to display a progress bar. Defaults to True.
 
     Raises:
         SequenceError: If all the lengths of each sequence, qualitiy and
@@ -641,8 +643,8 @@ def correct_sequences_to_whitelist(
     whitelist_indices = {bc: i for i, bc in enumerate(whitelist)}
     unmatched_sequences = []
     matches = {}
-    for seq in tqdm(list(counts.keys()), desc='[1/3] Finding exact matches',
-                    smoothing=0):
+    for seq in progress(list(counts.keys()), desc='[1/3] Finding exact matches',
+                        disable=not show_progress):
         if seq in whitelist_indices:
             matches[seq] = seq
             whitelist_counts[whitelist_indices[seq]] += counts[seq]
@@ -655,9 +657,9 @@ def correct_sequences_to_whitelist(
     corrections = [None] * len(sequences)
     for i, (indices, masks) in enumerate(utils.ParallelWithProgress(
             n_jobs=n_threads, total=len(unmatched_sequences),
-            desc='[2/3] Finding mismatches')(delayed(_mismatch_masks)(
-                _sequence_to_array(seq), whitelist_arrays, d=d)
-                                             for seq in unmatched_sequences)):
+            desc='[2/3] Finding mismatches', disable=not show_progress
+    )(delayed(_mismatch_masks)(_sequence_to_array(seq), whitelist_arrays, d=d)
+      for seq in unmatched_sequences)):
         indices = np.array(indices, dtype=int)
         masks = np.array(masks, dtype=bool)
         seq = unmatched_sequences[i]
@@ -674,13 +676,15 @@ def correct_sequences_to_whitelist(
         if len(match_indices) > 0:
             whitelist_counts[match_indices] += counts[seq] / len(match_indices)
 
-    progress = tqdm(
-        total=len(sequences), desc='[3/3] Correcting sequences', smoothing=0
+    pbar = progress(
+        total=len(sequences),
+        desc='[3/3] Correcting sequences',
+        disable=not show_progress
     )
     for i, sequence in enumerate(sequences):
         if sequence in matches:
             corrections[i] = matches[sequence]
-            progress.update(1)
+            pbar.update(1)
 
     # Calculate proportions
     whitelist_pseudo = sum(whitelist_counts) + len(whitelist)
@@ -700,7 +704,7 @@ def correct_sequences_to_whitelist(
         )
         if best_bc >= 0 and log10_confidence >= confidence:
             corrections[i] = whitelist[best_bc]
-        progress.update(1)
-        progress.refresh()
+        pbar.update(1)
+        pbar.refresh()
 
     return corrections
