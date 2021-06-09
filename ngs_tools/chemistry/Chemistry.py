@@ -3,7 +3,7 @@ import itertools
 import os
 from typing import Dict, List, Optional, Tuple, Union
 
-from .. import fastq
+from ..fastq.Read import Read
 
 WHITELISTS_DIR = os.path.join(
     os.path.abspath(os.path.dirname(__file__)), 'whitelists'
@@ -205,7 +205,7 @@ class SubSequenceParser:
 
     def parse_reads(
         self,
-        reads: List[fastq.Read],
+        reads: List[Read],
         concatenate: bool = False
     ) -> Tuple[Union[str, Tuple[str]], Union[str, Tuple[str]]]:
         """Behaves identically to :func:`parse`, but instead on a list of
@@ -322,6 +322,11 @@ class Chemistry:
         """Number of sequences to parse at once"""
         return self._n
 
+    @property
+    def parsers(self) -> Dict[str, SubSequenceParser]:
+        """Retrieve a copy of the :attr:`_parsers` dictionary."""
+        return copy.deepcopy(self._parsers)
+
     def get_parser(self, name: str) -> SubSequenceParser:
         """Get a :class:`SubSequenceParser` by its name"""
         return self._parsers[name]
@@ -386,7 +391,7 @@ class Chemistry:
 
     def parse_reads(
         self,
-        reads: List[fastq.Read],
+        reads: List[Read],
         concatenate: bool = False,
         check_name: bool = True
     ) -> Dict[str, Tuple[Union[str, Tuple[str]], Union[str, Tuple[str]]]]:
@@ -426,7 +431,7 @@ class Chemistry:
         return self.n == other.n and self._parsers == other._parsers
 
     def __str__(self):
-        return self.description
+        return self.name
 
     def __repr__(self):
         return f'{self.__class__.__name__} {self.name} {self._parsers}'
