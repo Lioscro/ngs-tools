@@ -108,7 +108,7 @@ def fastqs_to_bam_with_chemistry(
     """
     if len(fastq_paths) != chemistry.n:
         raise FastqError(
-            f'Chemistry `{chemsistry}` requires {chemistry.n} FASTQs, but only '
+            f'Chemistry `{chemistry}` requires {chemistry.n} FASTQs, but only '
             f'{len(fastq_paths)} were provided.'
         )
     keys = set(tag_map.keys())
@@ -120,7 +120,7 @@ def fastqs_to_bam_with_chemistry(
     for tags in tag_map.values():
         all_tags.extend(tags)
     if len(set(all_tags)) != len(all_tags):
-        raise FastqError(f'Tag map contains duplicate BAM tags.')
+        raise FastqError('Tag map contains duplicate BAM tags.')
 
     rg = name or shortuuid.uuid()
     header = pysam.AlignmentHeader.from_dict({
@@ -132,7 +132,8 @@ def fastqs_to_bam_with_chemistry(
             'ID': rg
         }],
     })
-    with pysam.AlignmentFile(bam_path, 'wb', header=header, threads=n_threads) as f:
+    with pysam.AlignmentFile(bam_path, 'wb', header=header,
+                             threads=n_threads) as f:
         fastqs = []
         try:
             # Open all FASTQs
@@ -141,7 +142,7 @@ def fastqs_to_bam_with_chemistry(
 
             # Parse each set of reads
             for reads in progress(zip(*fastqs), desc='Writing BAM',
-                                 disable=not show_progress):
+                                  disable=not show_progress):
                 parsed = chemistry.parse_reads(reads, concatenate=True)
                 read_sequence, read_quality = parsed[sequence_key]
                 read_quality = pysam.qualitystring_to_array(read_quality)

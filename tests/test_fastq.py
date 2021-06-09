@@ -77,8 +77,10 @@ class TestFastq(mixins.TestMixin, TestCase):
     def test_fastqs_to_bam_with_chemistry_10xv3(self):
         bam_path = fastq.fastqs_to_bam_with_chemistry(
             self.fastq_paths,
-            chemistry.get_chemistry('10xv3'),
-            {'umi': ('UR', 'UY'), 'cell_barcode': ('CR', 'CY')},
+            chemistry.get_chemistry('10xv3'), {
+                'umi': ('UR', 'UY'),
+                'cell_barcode': ('CR', 'CY')
+            },
             os.path.join(self.temp_dir, 'test.bam'),
             name='test'
         )
@@ -94,7 +96,10 @@ class TestFastq(mixins.TestMixin, TestCase):
         ], [al.query_sequence for al in alignments])
         self.assertEqual([
             read.qualities.string for read in fastq.Fastq(self.fastq_paths[1])
-        ], [pysam.array_to_qualitystring(al.query_qualities) for al in alignments])
+        ], [
+            pysam.array_to_qualitystring(al.query_qualities)
+            for al in alignments
+        ])
         self.assertEqual({
             ('UR', 'CCAAAACAGTTT'),
             ('UY', 'CEE0C0BA0DFG'),
@@ -113,8 +118,10 @@ class TestFastq(mixins.TestMixin, TestCase):
     def test_fastqs_to_bam_with_chemistry_slideseq2(self):
         bam_path = fastq.fastqs_to_bam_with_chemistry(
             self.fastq2_paths,
-            chemistry.get_chemistry('slideseq2'),
-            {'umi': ('UR', 'UY'), 'spot_barcode': ('CR', 'CY')},
+            chemistry.get_chemistry('slideseq2'), {
+                'umi': ('UR', 'UY'),
+                'spot_barcode': ('CR', 'CY')
+            },
             os.path.join(self.temp_dir, 'test.bam'),
             name='test'
         )
@@ -130,7 +137,10 @@ class TestFastq(mixins.TestMixin, TestCase):
         ], [al.query_sequence for al in alignments])
         self.assertEqual([
             read.qualities.string for read in fastq.Fastq(self.fastq2_paths[1])
-        ], [pysam.array_to_qualitystring(al.query_qualities) for al in alignments])
+        ], [
+            pysam.array_to_qualitystring(al.query_qualities)
+            for al in alignments
+        ])
         self.assertEqual({
             ('UR', 'TTTTTTTTT'),
             ('UY', 'EEEEEEEEE'),
