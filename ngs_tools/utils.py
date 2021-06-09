@@ -1,3 +1,4 @@
+import functools
 import gzip
 import os
 import pickle
@@ -52,24 +53,27 @@ class suppress_stdout_stderr:
 
 def retry(
     function: Callable,
-    n: int,
+    retries: int,
     args: Optional[tuple] = None,
     kwargs: Optional[dict] = None,
     retry_every: Optional[int] = None,
     backoff: bool = False,
     exceptions: Optional[Tuple[Exception]] = None,
-):
+) -> Any:
     """Utility function to retry a function some number of times, with optional
     exponential backoff.
 
     Args:
         function: Function to retry
-        n: Number of times to retry
+        retries: Number of times to retry
         args: Function arguments
         kwargs: Dictionary of keyword arguments
         retry_every: Time to wait in seconds between retries. Defaults to no wait time.
         backoff: Whether or not to exponential backoff between retries
         exceptions: Tuple of exceptions to expect. Defaults to all exceptions.
+
+    Returns:
+        Whatever ``function`` returns
     """
     args = args or tuple()
     kwargs = kwargs or {}
@@ -80,12 +84,46 @@ def retry(
             return function(*args, **kwargs)
         except exceptions:
             failed += 1
-            if failed >= n:
+            if failed >= retries:
                 raise
             if retry_every:
                 time.sleep(retry_every)
                 if backoff:
                     retry_every *= 2
+
+
+def retry_decorator(
+    retries: int,
+    retry_every: Optional[int] = None,
+    backoff: bool = False,
+    exceptions: Optional[Tuple[Exception]] = None,
+) -> Callable:
+    """Function decorator to retry a function on exceptions.
+
+    Args:
+        retries: Number of times to retry
+        retry_every: Time to wait in seconds between retries. Defaults to no wait time.
+        backoff: Whether or not to exponential backoff between retries
+        exceptions: Tuple of exceptions to expect. Defaults to all exceptions.
+    """
+
+    def decorator(func):
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            return retry(
+                func,
+                retries,
+                args,
+                kwargs,
+                retry_every=retry_every,
+                backoff=backoff,
+                exceptions=exceptions
+            )
+
+        return wrapper
+
+    return decorator
 
 
 def run_executable(
