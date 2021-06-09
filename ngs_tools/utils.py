@@ -431,7 +431,7 @@ class FileWrapper:
 
     def close(self):
         """Close the (possibly already-closed) file"""
-        if not self.fp.closed:
+        if self.fp is not None and not self.fp.closed:
             self.fp.close()
 
     def reset(self):
