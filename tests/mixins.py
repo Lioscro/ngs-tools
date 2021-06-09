@@ -49,6 +49,14 @@ class TestMixin(TestCase):
         cls.fastq_path = os.path.join(cls.fastq_dir, 'small.fastq')
         cls.fastq2_path = os.path.join(cls.fastq_dir, 'small2.fastq')
         cls.fastq_gz_path = os.path.join(cls.fastq_dir, 'small.fastq.gz')
+        cls.fastq_paths = [
+            os.path.join(cls.fastq_dir, '10xv3_1.fastq.gz'),
+            os.path.join(cls.fastq_dir, '10xv3_2.fastq.gz'),
+        ]
+        cls.fastq2_paths = [
+            os.path.join(cls.fastq_dir, 'slideseq2_1.fastq.gz'),
+            os.path.join(cls.fastq_dir, 'slideseq2_2.fastq.gz'),
+        ]
 
         cls.bam_dir = os.path.join(cls.fixtures_dir, 'bam')
         cls.bam_path = os.path.join(cls.bam_dir, 'small.bam')

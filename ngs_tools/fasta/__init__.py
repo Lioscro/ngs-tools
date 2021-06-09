@@ -1,3 +1,5 @@
+from .. import sequence
+from ..progress import progress
 from .Fasta import (
     Fasta,
     FastaError,
@@ -6,11 +8,14 @@ from .FastaEntry import (
     FastaEntry,
     FastaEntryError,
 )
-from .. import sequence
 
 
 def split_genomic_fasta_to_cdna(
-    fasta_path: str, out_path: str, gene_infos: dict, transcript_infos: dict
+    fasta_path: str,
+    out_path: str,
+    gene_infos: dict,
+    transcript_infos: dict,
+    show_progress: bool = False,
 ) -> str:
     """Split a genomic FASTA into cDNA by using gene and transcript information
     generated from extracting information from a GTF.
@@ -22,12 +27,14 @@ def split_genomic_fasta_to_cdna(
             :func:`ngs_tools.gtf.genes_and_transcripts_from_gtf`
         transcript_infos: Dictionary containing transcript information, as returned by
             :func:`ngs_tools.gtf.genes_and_transcripts_from_gtf`
+        show_progress: Whether to display a progress bar. Defaults to False.
 
     Returns:
         Path to written FASTA
     """
     with Fasta(fasta_path, 'r') as f_in, Fasta(out_path, 'w') as f_out:
-        for entry in f_in:
+        for entry in progress(f_in, desc='Splitting cDNA',
+                              disable=not show_progress):
             # Find all gene and transcripts in this chromosome
             _gene_infos = {}
             _transcript_infos = {}
@@ -77,7 +84,8 @@ def split_genomic_fasta_to_intron(
     out_path: str,
     gene_infos: dict,
     transcript_infos: dict,
-    flank: int = 30
+    flank: int = 30,
+    show_progress: bool = False,
 ) -> str:
     """Split a genomic FASTA into introns by using gene and transcript information
     generated from extracting information from a GTF. Optionally append flanking
@@ -91,12 +99,14 @@ def split_genomic_fasta_to_intron(
         transcript_infos: Dictionary containing transcript information, as returned by
             :func:`ngs_tools.gtf.genes_and_transcripts_from_gtf`
         flank: Number of flanking bases to include for each intron. Defaults to 30.
+        show_progress: Whether to display a progress bar. Defaults to False.
 
     Returns:
         Path to written FASTA
     """
     with Fasta(fasta_path, 'r') as f_in, Fasta(out_path, 'w') as f_out:
-        for entry in f_in:
+        for entry in progress(f_in, desc='Splitting introns',
+                              disable=not show_progress):
             # Find all gene and transcripts in this chromosome
             _gene_infos = {}
             _transcript_infos = {}

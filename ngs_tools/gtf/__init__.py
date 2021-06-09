@@ -2,6 +2,7 @@ from itertools import product
 from typing import Dict, Generator, List, Optional, Set, Tuple, Union
 
 from ..logging import logger
+from ..progress import progress
 from .Gtf import (
     Gtf,
     GtfError,
@@ -22,32 +23,37 @@ from .SegmentCollection import (
 
 def parse_gtf(
     gtf_path: str,
-    features: list = ['exon', 'transcript', 'gene']
+    features: list = ['exon', 'transcript', 'gene'],
+    show_progress: bool = False,
 ) -> Generator[GtfEntry, None, None]:
     """Parse GTF and yield only the specified features as :class:`GtfEntry` instances.
 
     Args:
         gtf_path: path to GTF file
         features: list of GTF features to extract
+        show_progress: Whether to display a progress bar. Defaults to False.
 
     Yields:
         GTF entries
     """
     with Gtf(gtf_path, 'r') as f:
-        for entry in f:
+        for entry in progress(f, desc='Parsing GTF', disable=not show_progress):
             if entry.feature in features:
                 yield entry
 
 
-def genes_and_transcripts_from_gtf(gtf_path: str,
-                                   use_version: bool = False
-                                   ) -> Tuple[dict, dict]:
+def genes_and_transcripts_from_gtf(
+    gtf_path: str,
+    use_version: bool = False,
+    show_progress: bool = False,
+) -> Tuple[dict, dict]:
     """Parse GTF for gene and transcript information. Also, compute the introns of
     each transcript.
 
     Args:
         gtf_path: path to GTF file
         use_version: whether or not to use gene and transcript versions
+        show_progress: Whether to display a progress bar. Defaults to False.
 
     Returns:
         Dictionary containing gene information
@@ -58,7 +64,8 @@ def genes_and_transcripts_from_gtf(gtf_path: str,
     transcript_infos = {}
     renamed = set()
 
-    for entry in parse_gtf(gtf_path, ['exon', 'transcript', 'gene']):
+    for entry in parse_gtf(gtf_path, ['exon', 'transcript', 'gene'],
+                           show_progress=show_progress):
         # IMPORTANT: every feature must have gene_id
         attributes = entry.attributes
         gene_id = attributes.get('gene_id')
