@@ -643,7 +643,7 @@ def correct_sequences_to_whitelist(
     whitelist_indices = {bc: i for i, bc in enumerate(whitelist)}
     unmatched_sequences = []
     matches = {}
-    for seq in progress(list(counts.keys()), desc='[1/3] Finding exact matches',
+    for seq in progress(list(counts.keys()), desc='[1/4] Finding exact matches',
                         disable=not show_progress):
         if seq in whitelist_indices:
             matches[seq] = seq
@@ -651,13 +651,21 @@ def correct_sequences_to_whitelist(
         else:
             unmatched_sequences.append(seq)
 
-    # Step 2: Find all mismatch masks for which hamming distance <= d
-    whitelist_arrays = np.array([_sequence_to_array(bc) for bc in whitelist])
+    # Step 2: Construct whitelist mask
+    whitelist_arrays = np.zeros(
+        (len(whitelist), len(NUCLEOTIDES_STRICT), len(whitelist[0])),
+        dtype=bool
+    )
+    for i, bc in enumerate(progress(whitelist, desc='[2/4] Constructing masks',
+                                    disable=not show_progress)):
+        whitelist_arrays[i] = _sequence_to_array(bc)
+
+    # Step 3: Find all mismatch masks for which hamming distance <= d
     mismatch_cache = {}
     corrections = [None] * len(sequences)
     for i, (indices, masks) in enumerate(utils.ParallelWithProgress(
             n_jobs=n_threads, total=len(unmatched_sequences),
-            desc='[2/3] Finding mismatches', disable=not show_progress
+            desc='[3/4] Finding mismatches', disable=not show_progress
     )(delayed(_mismatch_masks)(_sequence_to_array(seq), whitelist_arrays, d=d)
       for seq in unmatched_sequences)):
         indices = np.array(indices, dtype=int)
@@ -676,9 +684,10 @@ def correct_sequences_to_whitelist(
         if len(match_indices) > 0:
             whitelist_counts[match_indices] += counts[seq] / len(match_indices)
 
+    # Step 4: correct all other sequences to whitelist
     pbar = progress(
         total=len(sequences),
-        desc='[3/3] Correcting sequences',
+        desc='[4/4] Correcting sequences',
         disable=not show_progress
     )
     for i, sequence in enumerate(sequences):
@@ -692,7 +701,6 @@ def correct_sequences_to_whitelist(
         (whitelist_counts + 1) / whitelist_pseudo
     )
 
-    # Step 3: correct all other sequences to whitelist
     confidence = np.log10(confidence)
     for i, seq in enumerate(sequences):
         if corrections[i] is not None:
