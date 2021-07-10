@@ -17,7 +17,8 @@ class TestUtils(mixins.TestMixin, TestCase):
         test = mock.MagicMock()
         test.return_value = 'test'
         self.assertEqual(
-            'test', utils.retry(test, n=3, args=('a', 'b'), kwargs={'c': 'd'})
+            'test',
+            utils.retry(test, retries=3, args=('a', 'b'), kwargs={'c': 'd'})
         )
         test.assert_called_once_with('a', 'b', c='d')
 
@@ -25,17 +26,32 @@ class TestUtils(mixins.TestMixin, TestCase):
         test = mock.MagicMock()
         test.side_effect = Exception('test')
         with self.assertRaises(Exception):
-            utils.retry(test, n=3)
+            utils.retry(test, retries=3)
         self.assertEqual(3, test.call_count)
 
+    def test_retry_decorator(self):
+
+        def test_func(*args, **kwargs):
+            return
+
+        with mock.patch('ngs_tools.utils.retry') as retry:
+            decorated_func = utils.retry_decorator(3, 1, True, [Exception])(
+                test_func
+            )
+            decorated_func('t', kw='arg')
+
+            retry.assert_called_once_with(
+                test_func,
+                3, ('t',), {'kw': 'arg'},
+                retry_every=1,
+                backoff=True,
+                exceptions=[Exception]
+            )
+
+    @utils.retry_decorator(3)
     def test_run_executable(self):
         p = utils.run_executable(['echo', 'TEST'], stream=False)
-        utils.retry(
-            self.assertEqual,
-            3,
-            args=(p.stdout.read(), 'TEST\n'),
-            retry_every=1
-        )
+        self.assertEqual('TEST\n', p.stdout.read())
 
     def test_run_exectuable_raises_exception(self):
         with self.assertRaises(subprocess.SubprocessError):
@@ -50,15 +66,11 @@ class TestUtils(mixins.TestMixin, TestCase):
             utils.run_executable(['echo', 'TEST'], wait=False)
             sp_mock.Popen().poll.assert_not_called()
 
+    @utils.retry_decorator(3)
     def test_run_executable_with_stream(self):
         with mock.patch('ngs_tools.utils.logger.debug') as debug_mock:
             utils.run_executable(['echo', 'TEST'], stream=True)
-            utils.retry(
-                debug_mock.assert_has_calls,
-                3,
-                args=([mock.call('TEST')],),
-                retry_every=1
-            )
+            debug_mock.assert_has_calls([mock.call('TEST')])
 
     def test_ParallelWithProgress(self):
         utils.ParallelWithProgress(

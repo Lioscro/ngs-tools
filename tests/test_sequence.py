@@ -89,3 +89,18 @@ class TestSequence(mixins.TestMixin, TestCase):
                 sequences, qualities, whitelist
             )
         self.assertEqual(['ACTG', 'ACTG', None, 'TTTN'], corrections)
+
+    def test_correct_sequences_to_whitelist_simple(self):
+        sequences = ['ACTG', 'ACTT', 'AGCC', 'TTTT']
+        whitelist = ['ACTG', 'TTTN']
+        with mock.patch('ngs_tools.sequence.utils.progress', mixins.tqdm_mock),\
+            mock.patch('ngs_tools.sequence.progress', mixins.tqdm_mock):
+            corrections = sequence.correct_sequences_to_whitelist_simple(
+                sequences, whitelist
+            )
+        self.assertEqual({
+            'ACTG': 'ACTG',
+            'ACTT': 'ACTG',
+            'AGCC': None,
+            'TTTT': 'TTTN'
+        }, corrections)

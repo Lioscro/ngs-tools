@@ -1,7 +1,7 @@
 import array
 import re
 from collections import Counter
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pysam
@@ -643,7 +643,7 @@ def correct_sequences_to_whitelist(
     whitelist_indices = {bc: i for i, bc in enumerate(whitelist)}
     unmatched_sequences = []
     matches = {}
-    for seq in progress(list(counts.keys()), desc='[1/3] Finding exact matches',
+    for seq in progress(list(counts.keys()), desc='[1/4] Finding exact matches',
                         disable=not show_progress):
         if seq in whitelist_indices:
             matches[seq] = seq
@@ -651,13 +651,20 @@ def correct_sequences_to_whitelist(
         else:
             unmatched_sequences.append(seq)
 
-    # Step 2: Find all mismatch masks for which hamming distance <= d
-    whitelist_arrays = np.array([_sequence_to_array(bc) for bc in whitelist])
+    # Step 2: Construct whitelist mask
+    whitelist_arrays = np.zeros(
+        (len(whitelist), len(NUCLEOTIDES_STRICT), len(whitelist[0])),
+        dtype=bool
+    )
+    for i, bc in enumerate(progress(whitelist, desc='[2/4] Constructing masks',
+                                    disable=not show_progress)):
+        whitelist_arrays[i] = _sequence_to_array(bc)
+
+    # Step 3: Find all mismatch masks for which hamming distance <= d
     mismatch_cache = {}
-    corrections = [None] * len(sequences)
     for i, (indices, masks) in enumerate(utils.ParallelWithProgress(
             n_jobs=n_threads, total=len(unmatched_sequences),
-            desc='[2/3] Finding mismatches', disable=not show_progress
+            desc='[3/4] Finding mismatches', disable=not show_progress
     )(delayed(_mismatch_masks)(_sequence_to_array(seq), whitelist_arrays, d=d)
       for seq in unmatched_sequences)):
         indices = np.array(indices, dtype=int)
@@ -676,9 +683,11 @@ def correct_sequences_to_whitelist(
         if len(match_indices) > 0:
             whitelist_counts[match_indices] += counts[seq] / len(match_indices)
 
+    # Step 4: correct all other sequences to whitelist
+    corrections = [None] * len(sequences)
     pbar = progress(
         total=len(sequences),
-        desc='[3/3] Correcting sequences',
+        desc='[4/4] Correcting sequences',
         disable=not show_progress
     )
     for i, sequence in enumerate(sequences):
@@ -692,7 +701,6 @@ def correct_sequences_to_whitelist(
         (whitelist_counts + 1) / whitelist_pseudo
     )
 
-    # Step 3: correct all other sequences to whitelist
     confidence = np.log10(confidence)
     for i, seq in enumerate(sequences):
         if corrections[i] is not None:
@@ -706,5 +714,102 @@ def correct_sequences_to_whitelist(
             corrections[i] = whitelist[best_bc]
         pbar.update(1)
         pbar.refresh()
+
+    return corrections
+
+
+def correct_sequences_to_whitelist_simple(
+    sequences: List[str],
+    whitelist: List[str],
+    d: int = 1,
+    n_threads: int = 1,
+    show_progress: bool = False,
+) -> Dict[str, Union[str, None]]:
+    """Correct a list of sequences to a whitelist within `d` hamming distance.
+    Note that `sequences` can contain duplicates, but `whitelist` can not.
+    Unlike :func:`correct_sequences_to_whitelist`, this function takes a naive
+    approach and discards any sequences that can be corrected to multiple
+    whitelisted sequences.
+
+    Args:
+        sequences: List of sequence strings
+        whitelist: List of whitelist sequences to correct to
+        d: Hamming distance threshold. Sequences will be corrected to the whitelist
+            with hamming distance <= ``d``. Defaults to 1.
+        n_threads: Number of threads to use. Defaults to 1.
+        show_progress: Whether to display a progress bar. Defaults to True.
+
+    Raises:
+        SequenceError: If all the lengths of each sequence, qualitiy and
+            whitelisted sequence are not equal, the number of sequences and
+            qualities provided are not equal or the whitelist contains duplicates.
+
+    Returns:
+        The corrections as a dict of sequence to correction mappings. Note that
+        the return type is different from :func:`correct_sequences_to_whitelist`.
+    """
+    # Check number of sequences and their lengths match with provided qualities
+    if len(set(whitelist)) != len(whitelist):
+        raise SequenceError('`whitelist` contains duplicates')
+    for seq in sequences:
+        if len(seq) != len(sequences[0]):
+            raise SequenceError(
+                'all sequences in `sequences` must be of same length'
+            )
+    for bc in whitelist:
+        if len(bc) != len(whitelist[0]):
+            raise SequenceError(
+                'all sequences in `whitelist` must be of same length'
+            )
+    if len(sequences[0]) != len(whitelist[0]):
+        raise SequenceError(
+            'all sequences in `sequences` and `whitelist` must be of same length'
+        )
+
+    corrections = {}
+
+    # Step 1: find exact matches first
+    sequences_set = set(sequences)
+    whitelist_set = set(whitelist)
+    unmatched_sequences = []
+    for seq in progress(list(sequences_set), desc='[1/3] Finding exact matches',
+                        disable=not show_progress):
+        if seq in whitelist_set:
+            corrections[seq] = seq
+        else:
+            unmatched_sequences.append(seq)
+
+    # Step 2: Construct whitelist mask
+    whitelist_arrays = np.zeros(
+        (len(whitelist), len(NUCLEOTIDES_STRICT), len(whitelist[0])),
+        dtype=bool
+    )
+    for i, bc in enumerate(progress(whitelist, desc='[2/3] Constructing masks',
+                                    disable=not show_progress)):
+        whitelist_arrays[i] = _sequence_to_array(bc)
+
+    # Step 3: Find all mismatch masks for which hamming distance <= d
+    for i, (indices, masks) in enumerate(utils.ParallelWithProgress(
+            n_jobs=n_threads, total=len(unmatched_sequences),
+            desc='[3/3] Finding mismatches', disable=not show_progress
+    )(delayed(_mismatch_masks)(_sequence_to_array(seq), whitelist_arrays, d=d)
+      for seq in unmatched_sequences)):
+        indices = np.array(indices, dtype=int)
+        masks = np.array(masks, dtype=bool)
+        seq = unmatched_sequences[i]
+
+        if indices.shape[0] == 0:
+            corrections[seq] = None
+            continue
+
+        # At this point, all exact matches have been processed, so we don't
+        # need to worry about those.
+        match_indices = indices[masks.sum(axis=1) == 0]
+        if len(match_indices) == 1:
+            corrections[seq] = whitelist[match_indices[0]]
+        elif indices.shape[0] == 1:
+            corrections[seq] = whitelist[indices[0]]
+        else:
+            corrections[seq] = None
 
     return corrections
