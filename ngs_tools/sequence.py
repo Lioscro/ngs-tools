@@ -685,35 +685,33 @@ def correct_sequences_to_whitelist(
 
     # Step 4: correct all other sequences to whitelist
     corrections = [None] * len(sequences)
-    pbar = progress(
-        total=len(sequences),
-        desc='[4/4] Correcting sequences',
-        disable=not show_progress
-    )
-    for i, sequence in enumerate(sequences):
-        if sequence in matches:
-            corrections[i] = matches[sequence]
-            pbar.update(1)
+    with progress(total=len(sequences), desc='[4/4] Correcting sequences',
+                  disable=not show_progress) as pbar:
+        for i, sequence in enumerate(sequences):
+            if sequence in matches:
+                corrections[i] = matches[sequence]
+                pbar.update(1)
 
-    # Calculate proportions
-    whitelist_pseudo = sum(whitelist_counts) + len(whitelist)
-    whitelist_log10_proportions = np.log10(
-        (whitelist_counts + 1) / whitelist_pseudo
-    )
-
-    confidence = np.log10(confidence)
-    for i, seq in enumerate(sequences):
-        if corrections[i] is not None:
-            continue
-
-        best_bc, log10_confidence = _correct_to_whitelist(
-            _qualities_to_array(qualities[i]), mismatch_cache[seq][0],
-            mismatch_cache[seq][1].reshape(1, -1), whitelist_log10_proportions
+        # Calculate proportions
+        whitelist_pseudo = sum(whitelist_counts) + len(whitelist)
+        whitelist_log10_proportions = np.log10(
+            (whitelist_counts + 1) / whitelist_pseudo
         )
-        if best_bc >= 0 and log10_confidence >= confidence:
-            corrections[i] = whitelist[best_bc]
-        pbar.update(1)
-        pbar.refresh()
+
+        confidence = np.log10(confidence)
+        for i, seq in enumerate(sequences):
+            if corrections[i] is not None:
+                continue
+
+            best_bc, log10_confidence = _correct_to_whitelist(
+                _qualities_to_array(qualities[i]), mismatch_cache[seq][0],
+                mismatch_cache[seq][1].reshape(1,
+                                               -1), whitelist_log10_proportions
+            )
+            if best_bc >= 0 and log10_confidence >= confidence:
+                corrections[i] = whitelist[best_bc]
+            pbar.update(1)
+            pbar.refresh()
 
     return corrections
 
