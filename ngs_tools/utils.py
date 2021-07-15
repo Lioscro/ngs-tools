@@ -211,7 +211,7 @@ class ParallelWithProgress(Parallel):
         pbar: Optional[tqdm] = None,
         total: Optional[int] = None,
         desc: Optional[str] = None,
-        disable: Optional[bool] = True,
+        disable: bool = False,
         *args,
         **kwargs
     ):
