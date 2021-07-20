@@ -93,6 +93,9 @@ class Logger:
     def addHandler(self, *args, **kwargs):
         return self.logger.addHandler(*args, **kwargs)
 
+    def removeHandler(self, *args, **kwargs):
+        return self.logger.removeHandler(*args, **kwargs)
+
     def setLevel(self, *args, **kwargs):
         return self.logger.setLevel(*args, **kwargs)
 
