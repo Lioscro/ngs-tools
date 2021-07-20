@@ -90,8 +90,10 @@ class Logger:
         """
         return f'[{self.namespace}] {message}'
 
-    def addHandler(self, *args, **kwargs):
-        return self.logger.addHandler(*args, **kwargs)
+    def addHandler(self, hdlr: logging.Handler, format: bool = True):
+        if format:
+            hdlr.setFormatter(logging.Formatter(self.FORMAT))
+        return self.logger.addHandler(hdlr)
 
     def removeHandler(self, *args, **kwargs):
         return self.logger.removeHandler(*args, **kwargs)
