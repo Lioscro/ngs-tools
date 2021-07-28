@@ -38,6 +38,31 @@ class TestGtf(mixins.TestMixin, TestCase):
         with open(path, 'r') as f:
             self.assertEqual(f'{line}\n', f.read())
 
+    def test_parse_gtf(self):
+        entries = list(gtf.parse_gtf(self.gtf_path))
+        self.assertEqual(9, len(entries))
+        self.assertEqual('2', entries[1].chromosome)
+        self.assertEqual('exon', entries[1].feature)
+        self.assertEqual(10, entries[1].start)
+        self.assertEqual(14, entries[1].end)
+        self.assertEqual('-', entries[1].strand)
+        self.assertEqual({
+            'gene_id': 'GENE_C',
+            'gene_name': 'GENE_C_NAME',
+            'transcript_id': 'TRANSCRIPT_C',
+            'gene_source': 'havana',
+            'gene_biotype': 'TEC',
+        }, entries[1].attributes)
+
+    def test_parse_gtf_with_filter_func(self):
+        entries = list(
+            gtf.parse_gtf(
+                self.gtf_path,
+                filter_func=lambda entry: entry.feature == 'exon'
+            )
+        )
+        self.assertEqual(5, len(entries))
+
     def test_genes_and_transcripts_from_gtf(self):
         gene_infos, transcript_infos = gtf.genes_and_transcripts_from_gtf(
             self.gtf_path
