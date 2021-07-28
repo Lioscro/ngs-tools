@@ -1,5 +1,5 @@
 from itertools import product
-from typing import Dict, Generator, List, Optional, Set, Tuple, Union
+from typing import Callable, Dict, Generator, List, Optional, Set, Tuple, Union
 
 from ..logging import logger
 from ..progress import progress
@@ -23,14 +23,16 @@ from .SegmentCollection import (
 
 def parse_gtf(
     gtf_path: str,
-    features: list = ['exon', 'transcript', 'gene'],
+    filter_func: Callable[[GtfEntry], bool] = lambda entry: True,
     show_progress: bool = False,
 ) -> Generator[GtfEntry, None, None]:
     """Parse GTF and yield only the specified features as :class:`GtfEntry` instances.
 
     Args:
         gtf_path: path to GTF file
-        features: list of GTF features to extract
+        filter_func: Function that takes a :class:`GtfEntry` instance and
+            returns ``True`` for entries to process and ``False`` for entries
+            to ignore. Defaults to no filtering.
         show_progress: Whether to display a progress bar. Defaults to False.
 
     Yields:
@@ -38,13 +40,15 @@ def parse_gtf(
     """
     with Gtf(gtf_path, 'r') as f:
         for entry in progress(f, desc='Parsing GTF', disable=not show_progress):
-            if entry.feature in features:
-                yield entry
+            if not filter_func(entry):
+                continue
+            yield entry
 
 
 def genes_and_transcripts_from_gtf(
     gtf_path: str,
     use_version: bool = False,
+    filter_func: Callable[[GtfEntry], bool] = lambda entry: True,
     show_progress: bool = False,
 ) -> Tuple[dict, dict]:
     """Parse GTF for gene and transcript information. Also, compute the introns of
@@ -53,6 +57,9 @@ def genes_and_transcripts_from_gtf(
     Args:
         gtf_path: path to GTF file
         use_version: whether or not to use gene and transcript versions
+        filter_func: Function that takes a :class:`GtfEntry` instance and
+            returns ``True`` for entries to process and ``False`` for entries
+            to ignore. Defaults to no filtering.
         show_progress: Whether to display a progress bar. Defaults to False.
 
     Returns:
@@ -64,7 +71,11 @@ def genes_and_transcripts_from_gtf(
     transcript_infos = {}
     renamed = set()
 
-    for entry in parse_gtf(gtf_path, ['exon', 'transcript', 'gene'],
+    entry_filter = lambda entry: (
+        entry.feature in ['exon', 'transcript', 'gene']
+    ) and filter_func(entry)
+
+    for entry in parse_gtf(gtf_path, filter_func=entry_filter,
                            show_progress=show_progress):
         # IMPORTANT: every feature must have gene_id
         attributes = entry.attributes
