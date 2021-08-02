@@ -50,8 +50,8 @@ class TestUtils(mixins.TestMixin, TestCase):
 
     @utils.retry_decorator(3)
     def test_run_executable(self):
-        p = utils.run_executable(['echo', 'TEST'], stream=False)
-        self.assertEqual('TEST\n', p.stdout.read())
+        p, stdout, stderr = utils.run_executable(['echo', 'TEST'], stream=False)
+        self.assertEqual(['TEST'], stdout)
 
     def test_run_exectuable_raises_exception(self):
         with self.assertRaises(subprocess.SubprocessError):

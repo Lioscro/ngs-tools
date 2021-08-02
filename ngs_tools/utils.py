@@ -2,6 +2,7 @@ import functools
 import gzip
 import os
 import pickle
+import queue
 import shutil
 import subprocess
 import tempfile
@@ -10,7 +11,7 @@ import threading
 from abc import abstractmethod
 from contextlib import contextmanager
 from operator import add
-from typing import Any, Callable, Generator, List, Optional, TextIO, Tuple
+from typing import Any, Callable, Generator, List, Optional, TextIO, Tuple, Union
 from urllib.request import urlretrieve
 
 from joblib import Parallel
@@ -136,7 +137,7 @@ def run_executable(
     quiet: bool = False,
     returncode: int = 0,
     alias: bool = True,
-) -> subprocess.Popen:
+) -> Union[subprocess.Popen, Tuple[subprocess.Popen, List[str], List[str]]]:
     """Execute a single shell command.
 
     Args:
@@ -157,7 +158,9 @@ def run_executable(
             Defaults to `True`
 
     Returns:
-        The spawned process
+        A tuple of (the spawned process, list of strings printed to stdout,
+        list of strings printed to stderr) if `wait=True`. Otherwise, just the
+        spawned process.
 
     Raises:
         subprocess.CalledProcessError: If not ``quiet`` and the process
@@ -178,27 +181,64 @@ def run_executable(
         bufsize=1 if wait else -1,
     )
 
+    # Helper function to read from a pipe and put the output to a queue.
+    def reader(pipe, qu, stop_event, name):
+        while not stop_event.is_set():
+            for _line in pipe:
+                line = _line.strip()
+                qu.put((name, line))
+
     # Wait if desired.
     if wait:
+        stdout = []
+        stderr = []
         out = []
+        out_queue = queue.Queue()
+        stop_event = threading.Event()
+        stdout_reader = threading.Thread(
+            target=reader,
+            args=(p.stdout, out_queue, stop_event, 'stdout'),
+            daemon=True
+        )
+        stderr_reader = threading.Thread(
+            target=reader,
+            args=(p.stderr, out_queue, stop_event, 'stderr'),
+            daemon=True
+        )
+        stdout_reader.start()
+        stderr_reader.start()
+
         while p.poll() is None:
-            if stream and not quiet:
-                for _line in p.stdout:
-                    line = _line.strip()
-                    out.append(line)
+            while not out_queue.empty():
+                name, line = out_queue.get()
+                if stream and not quiet:
                     logger.debug(line)
-                for _line in p.stderr:
-                    line = _line.strip()
-                    out.append(line)
-                    logger.debug(line)
+                out.append(line)
+                if name == 'stdout':
+                    stdout.append(line)
+                elif name == 'stderr':
+                    stderr.append(line)
             else:
-                time.sleep(1)
+                time.sleep(0.1)
+
+        # Stop readers & flush queue
+        stop_event.set()
+        time.sleep(1)
+        while not out_queue.empty():
+            name, line = out_queue.get()
+            if stream and not quiet:
+                logger.debug(line)
+            out.append(line)
+            if name == 'stdout':
+                stdout.append(line)
+            elif name == 'stderr':
+                stderr.append(line)
 
         if not quiet and p.returncode != returncode:
             logger.error('\n'.join(out))
             raise subprocess.CalledProcessError(p.returncode, ' '.join(command))
 
-    return p
+    return (p, stdout, stderr) if wait else p
 
 
 class ParallelWithProgress(Parallel):
