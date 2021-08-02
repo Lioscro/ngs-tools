@@ -158,8 +158,8 @@ def run_executable(
             Defaults to `True`
 
     Returns:
-        A tuple of (the spawned process, list of strings printed to stdout,
-        list of strings printed to stderr) if `wait=True`. Otherwise, just the
+        A tuple of (the spawned process, string printed to stdout,
+        string printed to stderr) if `wait=True`. Otherwise, just the
         spawned process.
 
     Raises:
@@ -190,8 +190,8 @@ def run_executable(
 
     # Wait if desired.
     if wait:
-        stdout = []
-        stderr = []
+        stdout = ''
+        stderr = ''
         out = []
         out_queue = queue.Queue()
         stop_event = threading.Event()
@@ -215,9 +215,9 @@ def run_executable(
                     logger.debug(line)
                 out.append(line)
                 if name == 'stdout':
-                    stdout.append(line)
+                    stdout += f'{line}\n'
                 elif name == 'stderr':
-                    stderr.append(line)
+                    stderr += f'{line}\n'
             else:
                 time.sleep(0.1)
 
@@ -230,9 +230,9 @@ def run_executable(
                 logger.debug(line)
             out.append(line)
             if name == 'stdout':
-                stdout.append(line)
+                stdout += f'{line}\n'
             elif name == 'stderr':
-                stderr.append(line)
+                stderr += f'{line}\n'
 
         if not quiet and p.returncode != returncode:
             logger.error('\n'.join(out))
