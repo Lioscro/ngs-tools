@@ -74,6 +74,71 @@ class SequenceError(Exception):
     pass
 
 
+def alignment_to_cigar(
+    reference: str, query: str, mismatch: bool = False
+) -> str:
+    """Convert an alignment to a CIGAR string.
+
+    The CIGAR is always constructed relative to the `reference` (i.e. as
+    insertions/deletions from the reference). The provided sequences must
+    represent their alignments, containing the "-" character at positions where
+    there are gaps in one or another.
+
+    Args:
+        reference: The reference sequence alignment
+        query: The query sequence alignment
+        mismatch: Whether or not to use the "X" CIGAR operation in places of
+            mismatches. Defaults to `True`, such that all non-gaps are considered
+            matches with the "M" CIGAR operation. When there are ambiguous
+            characters, a mismatch occurs only when the two sets of possible
+            nucleotides are exclusive.
+
+    Returns:
+        The CIGAR string representing the provided alignment
+
+    Raises:
+        SequenceError: if the `reference` and `query` do not have the same
+            length, or if there are gaps in both alignments at the same position
+    """
+    if len(reference) != len(query):
+        raise SequenceError('The two alignments must have the same lengths.')
+
+    cigar = ''
+    prev_state = None
+    count = 0
+    for r, q in zip(reference, query):
+        if r == '-' and q == '-':
+            raise SequenceError(
+                'The two alignments have gaps at the same position.'
+            )
+
+        if r == '-':
+            state = 'I'
+        elif q == '-':
+            state = 'D'
+        elif mismatch:
+            _r = set(NUCLEOTIDES_AMBIGUOUS.get(r, (r,)))
+            _q = set(NUCLEOTIDES_AMBIGUOUS.get(q, (q,)))
+            if _r & _q:
+                state = 'M'
+            else:
+                state = 'X'
+        else:
+            state = 'M'
+
+        if state == prev_state:
+            count += 1
+        else:
+            if prev_state is not None:
+                cigar += f'{count}{prev_state}'
+            prev_state = state
+            count = 1
+
+    if prev_state is not None:
+        cigar += f'{count}{prev_state}'
+    return cigar
+
+
 def complement_sequence(sequence: str, reverse: bool = False) -> str:
     """Complement the given sequence, with optional reversing.
 
@@ -171,6 +236,7 @@ def call_consensus(sequences: List[str], proportion: float = 0.05):
         sequences: Sequences to call consensus for
         proportion: Proportion of each sequence to allow mismatched bases to be
             above ``q_threshold``
+
     Returns:
         List of consensus sequences
         Numpy array of assignments for each sequence in ``sequences``

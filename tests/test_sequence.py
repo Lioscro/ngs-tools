@@ -10,6 +10,18 @@ from . import mixins
 
 class TestSequence(mixins.TestMixin, TestCase):
 
+    def test_alignment_to_cigar(self):
+        self.assertEqual('4D', sequence.alignment_to_cigar('ACGT', '----'))
+        self.assertEqual('1M2D1M', sequence.alignment_to_cigar('ACGT', 'A--T'))
+        self.assertEqual('4I', sequence.alignment_to_cigar('----', 'AAAT'))
+        self.assertEqual(
+            '3M1X', sequence.alignment_to_cigar('ACGT', 'ACNV', mismatch=True)
+        )
+        with self.assertRaises(sequence.SequenceError):
+            sequence.alignment_to_cigar('AAAA', 'AAA')
+        with self.assertRaises(sequence.SequenceError):
+            sequence.alignment_to_cigar('----', '----')
+
     def test_call_consensus_with_qualities(self):
         with open(self.sequences_path, 'r') as f1, open(self.qualities_path,
                                                         'r') as f2:
