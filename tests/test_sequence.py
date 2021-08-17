@@ -67,6 +67,11 @@ class TestSequence(mixins.TestMixin, TestCase):
         self.assertTrue(common[0][1] > 50)
         self.assertTrue(common[1][1] > 25)
 
+    def test_levenshtein_distance(self):
+        self.assertEqual(1, sequence.levenshtein_distance('AC', 'AT'))
+        self.assertEqual(0, sequence.levenshtein_distance('AT', 'AN'))
+        self.assertEqual(2, sequence.levenshtein_distance('XZ', 'ZX'))
+
     def test_hamming_distance(self):
         self.assertEqual(0, sequence.hamming_distance('ACTG', 'ACTG'))
         self.assertEqual(1, sequence.hamming_distance('ACTG', 'ACTT'))

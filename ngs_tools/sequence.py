@@ -57,6 +57,8 @@ NUCLEOTIDE_MASKS = {
 }
 MASK_TO_NUCLEOTIDE = {tuple(mask): n for n, mask in NUCLEOTIDE_MASKS.items()}
 LEVENSHTEIN_DISTANCE_ALIGNER = NeedlemanWunsch(
+    match=0,
+    mismatch=-1,
     gap_open=0,
     gap_extend=-1,
     substitution_matrix={
