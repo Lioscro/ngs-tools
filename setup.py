@@ -25,7 +25,7 @@ setup(
     include_package_data=True,
     install_requires=read('requirements.txt').strip().split('\n'),
     extras_require={
-        'levenshtein': ['pyseq-align>=1.0.0'],
+        'levenshtein': read('requirements-levenshtein.txt').strip().split('\n'),
     },
     entry_points={},
     classifiers=[
