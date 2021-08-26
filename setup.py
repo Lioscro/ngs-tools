@@ -24,6 +24,9 @@ setup(
     zip_safe=False,
     include_package_data=True,
     install_requires=read('requirements.txt').strip().split('\n'),
+    extras_require={
+        'levenshtein': ['pyseq-align>=1.0.0'],
+    },
     entry_points={},
     classifiers=[
         'Intended Audience :: Science/Research',

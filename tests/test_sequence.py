@@ -72,6 +72,12 @@ class TestSequence(mixins.TestMixin, TestCase):
         self.assertEqual(0, sequence.levenshtein_distance('AT', 'AN'))
         self.assertEqual(2, sequence.levenshtein_distance('XZ', 'ZX'))
 
+    def test_levenshtein_distance_raises_error(self):
+        with mock.patch('ngs_tools.sequence.LEVENSHTEIN_DISTANCE_ALIGNER',
+                        None):
+            with self.assertRaises(sequence.SequenceError):
+                sequence.levenshtein_distance('AC', 'AT')
+
     def test_hamming_distance(self):
         self.assertEqual(0, sequence.hamming_distance('ACTG', 'ACTG'))
         self.assertEqual(1, sequence.hamming_distance('ACTG', 'ACTT'))
