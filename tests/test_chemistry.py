@@ -203,3 +203,9 @@ class TestChemistry(TestMixin, TestCase):
         self.assertEqual(
             chemistry.get_chemistry('10xv3'), chemistry.get_chemistry('10XV3')
         )
+
+    def test_lengths(self):
+        self.assertEqual((28, None), chemistry.get_chemistry('10xv3').lengths)
+        self.assertEqual((26, None), chemistry.get_chemistry('10xv2').lengths)
+        self.assertEqual((8, 14, None),
+                         chemistry.get_chemistry('indropsv3').lengths)
