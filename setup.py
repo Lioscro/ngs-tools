@@ -10,7 +10,7 @@ long_description = read('README.md')
 
 setup(
     name='ngs-tools',
-    version='1.5.6',
+    version='1.5.8',
     url='https://github.com/Lioscro/ngs-tools',
     author='Kyung Hoi (Joseph) Min',
     author_email='phoenixter96@gmail.com',
@@ -24,6 +24,9 @@ setup(
     zip_safe=False,
     include_package_data=True,
     install_requires=read('requirements.txt').strip().split('\n'),
+    extras_require={
+        'levenshtein': read('requirements-levenshtein.txt').strip().split('\n'),
+    },
     entry_points={},
     classifiers=[
         'Intended Audience :: Science/Research',

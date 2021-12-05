@@ -327,6 +327,23 @@ class Chemistry:
         """Retrieve a copy of the :attr:`_parsers` dictionary."""
         return copy.deepcopy(self._parsers)
 
+    @property
+    def lengths(self) -> Tuple[int, ...]:
+        """The expected length for each sequence, based on :attr:`parsers`.
+        `None` indicates any length is expected.
+        """
+        l = [None] * self.n  # noqa: E741
+        for parser in self._parsers.values():
+            for definition in parser.definitions:
+                i = definition.index
+                _l = definition.end
+                if _l is not None:
+                    if l[i] is None:
+                        l[i] = _l
+                    else:
+                        l[i] = max(l[i], _l)
+        return tuple(l)
+
     def get_parser(self, name: str) -> SubSequenceParser:
         """Get a :class:`SubSequenceParser` by its name"""
         return self._parsers[name]

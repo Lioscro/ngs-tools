@@ -7,7 +7,10 @@ import numpy as np
 import pysam
 from joblib import delayed
 from numba import njit
-from pyseq_align import NeedlemanWunsch
+try:
+    from pyseq_align import NeedlemanWunsch
+except ImportError:
+    NeedlemanWunsch = None
 
 from . import utils
 from .progress import progress
@@ -57,6 +60,8 @@ NUCLEOTIDE_MASKS = {
 }
 MASK_TO_NUCLEOTIDE = {tuple(mask): n for n, mask in NUCLEOTIDE_MASKS.items()}
 LEVENSHTEIN_DISTANCE_ALIGNER = NeedlemanWunsch(
+    match=0,
+    mismatch=-1,
     gap_open=0,
     gap_extend=-1,
     substitution_matrix={
@@ -66,7 +71,7 @@ LEVENSHTEIN_DISTANCE_ALIGNER = NeedlemanWunsch(
         }
         for n in NUCLEOTIDES
     }
-)
+) if NeedlemanWunsch is not None else None
 SEQUENCE_PARSER = re.compile(r'[^atcgATCG]')
 
 
@@ -433,16 +438,13 @@ def levenshtein_distance(sequence1: str, sequence2: str) -> int:
     Returns:
         Levenshtein distance
     """
+    if LEVENSHTEIN_DISTANCE_ALIGNER is None:
+        raise SequenceError(
+            'Levenshtein distance requires the `pyseq-align` library, which '
+            'can be installed with `pip install pyseq-align` or '
+            '`pip install ngs-tools[levenshtein]`.'
+        )
     return -LEVENSHTEIN_DISTANCE_ALIGNER.align(sequence1, sequence2).score
-
-
-def _levenshtein_alignment(
-    sequence1: str, sequence2: str
-) -> Tuple[np.ndarray, np.ndarray, int]:
-    align = LEVENSHTEIN_DISTANCE_ALIGNER.align(sequence1, sequence2)
-    return _sequence_to_array(align.result_a), _sequence_to_array(
-        align.result_b
-    ), -align.score
 
 
 @njit
