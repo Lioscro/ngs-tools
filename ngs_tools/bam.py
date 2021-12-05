@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import pysam
 
@@ -259,22 +259,31 @@ def split_bam(
 
 def tag_bam_with_fastq(
     bam_path: str,
-    fastq_path: str,
-    tag_func: Callable[[Read], dict],
+    fastq_path: Union[str, List[str]],
+    tag_func: Union[Callable[[Read], dict], List[Callable[[Read], dict]]],
     out_path: str,
     check_name: bool = True,
     n_threads: int = 1,
     show_progress: bool = False,
 ):
-    """Add tags to BAM entries using sequences from a FASTQ file.
+    """Add tags to BAM entries using sequences from one or more FASTQ files.
 
     Internally, this function calls :func:`apply_bam`.
 
+    Note:
+        The tag keys generated from `tag_func` must contain unique keys of at
+        most 2 characters.
+
     Args:
         bam_path: Path to the BAM file
-        fastq_path: Path to FASTQ file
+        fastq_path: Path to FASTQ file. This option may be a list to extract
+            tags from multiple FASTQ files. In this case, `tag_func` must also
+            be a list of functions.
         tag_func: Function that takes a :class:`ngs_tools.fastq.Read` object and
-            returns a dictionary of tags
+            returns a dictionary of tags. When multiple FASTQs are being parsed
+            simultaneously, each function needs to produce unique dictionary keys.
+            Additionally, BAM tag keys may only be at most 2 characters. However,
+            neither of these conditions are checked in favor of runtime.
         out_path: Path to output BAM file
         check_name: Whether or not to raise a :class:`BamError` if the FASTQ does not
             contain a read in the BAM
@@ -283,15 +292,34 @@ def tag_bam_with_fastq(
 
     Returns:
         Path to written BAM
+
+    Raises:
+        BamError: If only one of `fastq_path` and `tag_func` is a list, if
+            both are lists but they have different lengths, if `check_name=True`
+            but there are missing tags.
     """
-    tags = {
-        read.name: tag_func(read)
-        for read in progress(
-            Fastq(fastq_path),
-            desc='Extracting tags',
-            disable=not show_progress
+    # Check arguments.
+    if isinstance(fastq_path, list) and isinstance(tag_func, list):
+        if len(fastq_path) != len(tag_func):
+            raise BamError(
+                '`fastq_path` and `tag_func` must contain the same number of elements.'
+            )
+        fastq_paths = fastq_path
+        tag_funcs = tag_func
+    elif not isinstance(fastq_path, list) and not isinstance(tag_func, list):
+        fastq_paths = [fastq_path]
+        tag_funcs = [tag_func]
+    else:
+        raise BamError(
+            'Both `fastq_path` and `tag_func` must be lists, or neither must '
+            'be lists.'
         )
-    }
+
+    tags = {}
+    for path, func in zip(fastq_paths, tag_funcs):
+        for read in progress(Fastq(path), desc=f'Extracting tags from {path}',
+                             disable=not show_progress):
+            tags.setdefault(read.name, {}).update(func(read))
 
     def apply_func(al: pysam.AlignedSegment):
         if al.query_name in tags:

@@ -63,6 +63,34 @@ class TestBam(TestMixin, TestCase):
         self.assertEqual([14, 14, 14, 0], list(reads[1].query_qualities))
         self.assertEqual('CC', reads[1].get_tag('TS'))
 
+    def test_tag_bam_with_multiple_fastqs(self):
+        path = os.path.join(self.temp_dir, 'test.bam')
+
+        def tag_func1(read):
+            return {'T1': read.sequence[:2]}
+
+        def tag_func2(read):
+            return {'T2': read.sequence[2:]}
+
+        bam.tag_bam_with_fastq(
+            self.bam_path, [self.fastq_path, self.fastq2_path],
+            [tag_func1, tag_func2], path
+        )
+        with pysam.AlignmentFile(path, 'rb', check_sq=False) as f:
+            reads = list(f.fetch(until_eof=True))
+
+        self.assertEqual(2, len(reads))
+        self.assertEqual('read1', reads[0].query_name)
+        self.assertEqual('ACTG', reads[0].query_sequence)
+        self.assertEqual([32, 32, 32, 33], list(reads[0].query_qualities))
+        self.assertEqual('AC', reads[0].get_tag('T1'))
+        self.assertEqual('TT', reads[0].get_tag('T2'))
+        self.assertEqual('read2', reads[1].query_name)
+        self.assertEqual('AAGT', reads[1].query_sequence)
+        self.assertEqual([14, 14, 14, 0], list(reads[1].query_qualities))
+        self.assertEqual('AA', reads[1].get_tag('T1'))
+        self.assertEqual('CC', reads[1].get_tag('T2'))
+
     def test_filter_bam(self):
         path = os.path.join(self.temp_dir, 'test.bam')
         bam.filter_bam(self.bam_path, lambda al: al.query_name == 'read1', path)
