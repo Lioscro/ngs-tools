@@ -44,7 +44,8 @@ def fastq_to_bam(
             'SO': 'unsorted'
         },
         'RG': [{
-            'ID': rg
+            'ID': rg,
+            'SM': rg
         }],
     })
     with Fastq(fastq_path,

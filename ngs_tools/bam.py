@@ -131,9 +131,10 @@ def split_bam(
     1) The ``.is_paired`` property is checked to be True.
     2) If the read is uanligned, at most one other unaligned read with the same
        read name is allowed to be in the BAM. This other read is its mate.
-       If the read is aligned, it MUST have the ``HI`` BAM tag indicating the
-       alignment index. If any of these constraints are not met, an exception is
-       raised.
+       If the read is aligned, it should have the ``HI`` BAM tag indicating the
+       alignment index. If no ``HI`` tag is present, then it is assumed only
+       one alignment should be present for each read pair. If any of these
+       constraints are not met, an exception is raised.
 
     Args:
         bam_path: Path to the BAM file
@@ -182,9 +183,9 @@ def split_bam(
             group_ids.append(group_id)
 
             if read.is_paired:
-                alignment_index = None if read.is_unmapped else read.get_tag(
+                alignment_index = None if read.is_unmapped or not read.has_tag(
                     'HI'
-                )
+                ) else read.get_tag('HI')
                 key = (read_name, alignment_index)
                 if key in pairs_added:
                     raise BamError(
