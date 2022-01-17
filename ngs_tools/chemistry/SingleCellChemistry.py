@@ -345,7 +345,31 @@ _SCI_FATE = SingleCellChemistry(
     umi_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 8)),
     whitelist_path=os.path.join(WHITELISTS_DIR, 'sci_fate_whitelist.txt.gz'),
 )
-_PLATE_SINGLE_CELL_CHEMISTRIES = [_SMARTSEQ_V2, _SMARTSEQ_V3]
+_BDWTA = SingleCellChemistry(
+    name='BD Rhapsody',
+    description=('Well-based single-cell RNA-seq chemistry by BD Biosciences'),
+    n=2,
+    cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
+    cell_barcode_parser=SubSequenceParser(
+        SubSequenceDefinition(0, 0, 9),
+        SubSequenceDefinition(0, 21, 9),
+        SubSequenceDefinition(0, 43, 9),
+    ),
+    umi_parser=SubSequenceParser(SubSequenceDefinition(0, 52, 8)),
+)
+_SPLITSEQ = SingleCellChemistry(
+    name='SPLiT-seq',
+    description='Rosenberg et al. 2018',
+    n=2,
+    cdna_parser=SubSequenceParser(SubSequenceDefinition(0)),
+    cell_barcode_parser=SubSequenceParser(
+        SubSequenceDefinition(1, 10, 8),
+        SubSequenceDefinition(1, 48, 8),
+        SubSequenceDefinition(1, 78, 8),
+    ),
+    umi_parser=SubSequenceParser(SubSequenceDefinition(1, 0, 10)),
+)
+_PLATE_SINGLE_CELL_CHEMISTRIES = [_SMARTSEQ_V2, _SMARTSEQ_V3, _BDWTA]
 _DROPLET_SINGLE_CELL_CHEMISTRIES = [
     _DROPSEQ, _10X_V1, _10X_V2, _10X_V3, _INDROPS_V1, _INDROPS_V2, _INDROPS_V3,
     _SURECELL, _SCI_FATE

@@ -184,6 +184,14 @@ class TestChemistry(TestMixin, TestCase):
         with self.assertRaises(chemistry.SingleCellChemistryError):
             chem.to_starsolo_arguments()
 
+        chem = chemistry.get_chemistry('slideseq2')
+        self.assertEqual({
+            '--soloType': 'CB_UMI_Complex',
+            '--soloCBposition': ['0_0_0_7', '0_26_0_31'],
+            '--soloUMIposition': ['0_32_0_40'],
+            '--soloCBwhitelist': 'None'
+        }, chem.to_starsolo_arguments())
+
     def test_slideseqv2(self):
         seq1 = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO'
         seq2 = 'QRSTUVWXYZ'

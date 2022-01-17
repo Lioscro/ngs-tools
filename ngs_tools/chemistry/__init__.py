@@ -31,7 +31,7 @@ def _clean_name(name: str):
     Returns:
         Cleaned name
     """
-    name = name.lower().replace('-', '')
+    name = name.lower().replace('-', '').replace(' ', '')
     version = 1
     base_name = name
 
