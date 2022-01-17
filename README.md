@@ -1,6 +1,6 @@
 # ngs_tools
-![github version](https://img.shields.io/badge/Version-1.5.9-informational)
-[![pypi version](https://img.shields.io/pypi/v/ngs-tools)](https://pypi.org/project/ngs-tools/1.5.9/)
+![github version](https://img.shields.io/badge/Version-1.5.10-informational)
+[![pypi version](https://img.shields.io/pypi/v/ngs-tools)](https://pypi.org/project/ngs-tools/1.5.10/)
 ![python versions](https://img.shields.io/pypi/pyversions/ngs-tools)
 ![status](https://github.com/Lioscro/ngs-tools/workflows/CI/badge.svg)
 [![codecov](https://codecov.io/gh/Lioscro/ngs-tools/branch/main/graph/badge.svg?token=CITIPF64QZ)](https://codecov.io/gh/Lioscro/ngs-tools)
