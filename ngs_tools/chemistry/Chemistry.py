@@ -1,6 +1,7 @@
 import copy
 import itertools
 import os
+from abc import ABC
 from typing import Dict, List, Optional, Tuple, Union
 
 from ..fastq.Read import Read
@@ -260,7 +261,7 @@ class ChemistryError(Exception):
     pass
 
 
-class Chemistry:
+class Chemistry(ABC):
     """Base class to represent a sequencing chemistry.
 
     Attributes:
@@ -452,3 +453,27 @@ class Chemistry:
 
     def __repr__(self):
         return f'{self.__class__.__name__} {self.name} {self._parsers}'
+
+    @property
+    def has_barcode(self) -> bool:
+        return False
+
+    @property
+    def barcode_parser(self) -> SubSequenceParser:
+        raise NotImplementedError()
+
+    @property
+    def has_umi(self) -> bool:
+        return False
+
+    @property
+    def umi_parser(self) -> SubSequenceParser:
+        raise NotImplementedError()
+
+    @property
+    def has_whitelist(self) -> bool:
+        return False
+
+    @property
+    def whitelist_path(self):
+        raise NotImplementedError()
