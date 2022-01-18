@@ -358,7 +358,7 @@ def call_consensus_with_qualities(
     # when Python's recursion limit would be reached. Thankfully, all recursive algorithms can be
     # rewritten to be iterative.
     threshold = q_threshold * (l * proportion)
-    consensuses = []
+    consensus_index = {}
     assignments = np.full(len(sequences), -1, dtype=int)
     index_transform = {i: i for i in range(len(sequences))}
     _sequences_arrays = sequences_arrays.copy()
@@ -367,11 +367,7 @@ def call_consensus_with_qualities(
         consensus, assigned = _call_consensus(
             _sequences_arrays, _qualities_arrays, threshold
         )
-        if consensus in consensuses:
-            label = consensuses.index(consensus)
-        else:
-            label = len(consensuses)
-            consensuses.append(consensus)
+        label = consensus_index.setdefault(consensus, len(consensus_index))
 
         assigned_indices = assigned.nonzero()[0]
         unassigned_indices = (~assigned).nonzero()[0]
@@ -387,6 +383,7 @@ def call_consensus_with_qualities(
 
     # Reorder assignment so that consensuses[0] is the consensus with the greatest
     # number of assigned sequences, and so on.
+    consensuses = list(consensus_index.keys())
     reordered_consensuses = []
     reordered_assignments = np.full(len(sequences), -1, dtype=int)
     for i, _ in Counter(assignments).most_common():
