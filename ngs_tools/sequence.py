@@ -192,8 +192,13 @@ def _qualities_to_array(
     return arr
 
 
+@njit
 def _most_likely_array(positional_probs: np.ndarray) -> np.ndarray:
-    return positional_probs == positional_probs.max(axis=0)
+    most_likely = np.zeros(positional_probs.shape, dtype=np.bool_)
+    for i in range(positional_probs.shape[1]):
+        most_likely[:, i] = positional_probs[:, i] == positional_probs[:,
+                                                                       i].max()
+    return most_likely
 
 
 def _most_likely_sequence(
@@ -222,12 +227,14 @@ def _disambiguate_sequence(sequence: np.ndarray) -> List[str]:
     return sequences
 
 
+@njit
 def _calculate_positional_probs(
     sequences: np.ndarray, qualities: np.ndarray
 ) -> np.ndarray:
-    positional_probs = np.zeros(sequences[0].shape, dtype=int)
+    positional_probs = np.zeros(sequences[0].shape, dtype=np.uint)
     for seq, qual in zip(sequences, qualities):
-        np.add(positional_probs, qual, out=positional_probs, where=seq)
+        _qual = qual.repeat(seq.shape[0]).reshape(-1, seq.shape[0]).T
+        positional_probs += _qual * seq
     return positional_probs
 
 
@@ -313,11 +320,17 @@ def call_consensus_with_qualities(
             'length of each sequence must match length of each quality string'
         )
 
+    @njit
+    def _consensus_probs(consensus_array, seqs, quals):
+        probs = np.zeros(seqs.shape[0])
+        for i in range(seqs.shape[0]):
+            probs[i] = quals[i][_mismatch_mask(consensus_array, seqs[i])].sum()
+        return probs
+
     def _call_consensus(seqs, quals, thresh):
         if len(seqs) == 1:
-            return _most_likely_sequence(seqs[0],
-                                         allow_ambiguous), np.array([True],
-                                                                    dtype=bool)
+            return seqs[0], np.array([0],
+                                     dtype=np.uint), np.array([], dtype=np.uint)
 
         positional_probs = _calculate_positional_probs(seqs, quals)
         consensus_array = _most_likely_array(positional_probs)
@@ -325,21 +338,18 @@ def call_consensus_with_qualities(
         # For each sequence, calculate the probability that the sequence was actually
         # equal the consensus, but the different bases are due to sequencing errors
         # NOTE: should we also be looking at probability that matches are correct?
-        probs = []
-        for seq, qual in zip(seqs, quals):
-            p = np.sum(qual[_mismatch_mask(consensus_array, seq)])
-            probs.append(p)
-        probs = np.array(probs)
+        probs = _consensus_probs(consensus_array, seqs, quals)
         # the max is taken to deal with case where there is only one sequence
         assigned = probs <= max(thresh, min(probs))
+        assigned_indices = assigned.nonzero()[0]
+        unassigned_indices = (~assigned).nonzero()[0]
 
         # NOTE: we construct a new consensus from assigned sequences
-        assigned_seqs = seqs[assigned]
-        assigned_quals = quals[assigned]
-        return _most_likely_sequence(
-            _calculate_positional_probs(assigned_seqs, assigned_quals),
-            allow_ambiguous
-        ), assigned
+        assigned_seqs = seqs[assigned_indices]
+        assigned_quals = quals[assigned_indices]
+        return _calculate_positional_probs(
+            assigned_seqs, assigned_quals
+        ), assigned_indices, unassigned_indices
 
     # Convert sequences to array representations
     l = max(len(s) for s in sequences)  # noqa: E741
@@ -364,22 +374,22 @@ def call_consensus_with_qualities(
     _sequences_arrays = sequences_arrays.copy()
     _qualities_arrays = qualities_arrays.copy()
     while True:
-        consensus, assigned = _call_consensus(
+        probs, assigned_indices, unassigned_indices = _call_consensus(
             _sequences_arrays, _qualities_arrays, threshold
         )
+
+        consensus = _most_likely_sequence(probs, allow_ambiguous)
         label = consensus_index.setdefault(consensus, len(consensus_index))
 
-        assigned_indices = assigned.nonzero()[0]
-        unassigned_indices = (~assigned).nonzero()[0]
         assignments[[index_transform[i] for i in assigned_indices]] = label
-        if all(assigned):
+        if unassigned_indices.size == 0:
             break
         index_transform = {
             i: index_transform[j]
             for i, j in enumerate(unassigned_indices)
         }
-        _sequences_arrays = _sequences_arrays[~assigned]
-        _qualities_arrays = _qualities_arrays[~assigned]
+        _sequences_arrays = _sequences_arrays[unassigned_indices]
+        _qualities_arrays = _qualities_arrays[unassigned_indices]
 
     # Reorder assignment so that consensuses[0] is the consensus with the greatest
     # number of assigned sequences, and so on.
