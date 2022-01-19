@@ -50,6 +50,11 @@ class SingleCellChemistry(Chemistry):
         return self.get_parser('cell_barcode')
 
     @property
+    def barcode_parser(self) -> SubSequenceParser:
+        """Get the cell barcode parser"""
+        return self.cell_barcode_parser
+
+    @property
     def umi_parser(self) -> SubSequenceParser:
         """Get the UMI parser"""
         return self.get_parser('umi')
@@ -63,6 +68,11 @@ class SingleCellChemistry(Chemistry):
     def has_cell_barcode(self) -> bool:
         """Whether the chemistry has a cell barcode"""
         return self.has_parser('cell_barcode')
+
+    @property
+    def has_barcode(self) -> bool:
+        """Whether the chemistry has a cell barcode"""
+        return self.has_cell_barcode
 
     @property
     def has_umi(self) -> bool:
@@ -374,7 +384,7 @@ _DROPLET_SINGLE_CELL_CHEMISTRIES = [
     _DROPSEQ, _10X_V1, _10X_V2, _10X_V3, _INDROPS_V1, _INDROPS_V2, _INDROPS_V3,
     _SURECELL, _SCI_FATE
 ]
-_OTHER_SINGLE_CELL_CHEMISTRIES = [_CELSEQ_V1, _CELSEQ_V2, _SCRBSEQ]
+_OTHER_SINGLE_CELL_CHEMISTRIES = [_CELSEQ_V1, _CELSEQ_V2, _SCRBSEQ, _SPLITSEQ]
 SINGLE_CELL_CHEMISTRIES = (
     _PLATE_SINGLE_CELL_CHEMISTRIES + _DROPLET_SINGLE_CELL_CHEMISTRIES +
     _OTHER_SINGLE_CELL_CHEMISTRIES

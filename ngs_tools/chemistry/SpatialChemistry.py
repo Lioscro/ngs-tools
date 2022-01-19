@@ -42,6 +42,11 @@ class SpatialChemistry(Chemistry):
         return self.get_parser('spot_barcode')
 
     @property
+    def barcode_parser(self) -> SubSequenceParser:
+        """Get the spot barcode parser"""
+        return self.spot_barcode_parser
+
+    @property
     def umi_parser(self) -> SubSequenceParser:
         """Get the UMI parser"""
         return self.get_parser('umi')
@@ -55,6 +60,11 @@ class SpatialChemistry(Chemistry):
     def has_spot_barcode(self) -> bool:
         """Whether the chemistry has a spot barcode"""
         return self.has_parser('spot_barcode')
+
+    @property
+    def has_barcode(self) -> bool:
+        """Whether the chemistry has a spot barcode"""
+        return self.has_spot_barcode
 
     @property
     def has_umi(self) -> bool:
