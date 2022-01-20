@@ -13,6 +13,7 @@ except ImportError:
     NeedlemanWunsch = None
 
 from . import utils
+from .logging import logger
 from .progress import progress
 
 NUCLEOTIDES_STRICT = ['A', 'C', 'G', 'T']
@@ -320,12 +321,13 @@ def call_consensus_with_qualities(
             'length of each sequence must match length of each quality string'
         )
 
-    @njit
     def _consensus_probs(consensus_array, seqs, quals):
         probs = np.zeros(seqs.shape[0])
         for i in range(seqs.shape[0]):
             probs[i] = quals[i][_mismatch_mask(consensus_array, seqs[i])].sum()
         return probs
+
+    _consensus_probs_njit = njit(_consensus_probs)
 
     def _call_consensus(seqs, quals, thresh):
         if len(seqs) == 1:
@@ -335,10 +337,15 @@ def call_consensus_with_qualities(
         positional_probs = _calculate_positional_probs(seqs, quals)
         consensus_array = _most_likely_array(positional_probs)
 
+        # Numbaized function is efficient when there are many sequences
+        probs_func = _consensus_probs if len(
+            seqs
+        ) < 100 else _consensus_probs_njit
+
         # For each sequence, calculate the probability that the sequence was actually
         # equal the consensus, but the different bases are due to sequencing errors
         # NOTE: should we also be looking at probability that matches are correct?
-        probs = _consensus_probs(consensus_array, seqs, quals)
+        probs = probs_func(consensus_array, seqs, quals)
         # the max is taken to deal with case where there is only one sequence
         assigned = probs <= max(thresh, min(probs))
         assigned_indices = assigned.nonzero()[0]
@@ -350,6 +357,11 @@ def call_consensus_with_qualities(
         return _calculate_positional_probs(
             assigned_seqs, assigned_quals
         ), assigned_indices, unassigned_indices
+
+    if len(sequences) > 10000:
+        logger.warning(
+            'More than 10000 sequences provided. This may take a while.'
+        )
 
     # Convert sequences to array representations
     l = max(len(s) for s in sequences)  # noqa: E741
