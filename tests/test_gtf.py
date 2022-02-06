@@ -147,6 +147,37 @@ class TestGtf(mixins.TestMixin, TestCase):
             }
         }, transcript_infos)
 
+    def test_genes_and_transcripts_from_gtf_zero_length(self):
+        gene_infos, transcript_infos = gtf.genes_and_transcripts_from_gtf(
+            self.zero_length_gtf_path
+        )
+        self.assertEqual({
+            'Arnt': {
+                'segment': gtf.Segment(183054636, 183056584),
+                'chromosome': 'NC_051337.1',
+                'strand': '+',
+                'gene_name': '',
+                'transcripts': ['NM_012780.2']
+            }
+        }, gene_infos)
+        self.assertEqual({
+            'NM_012780.2': {
+                'gene_id':
+                    'Arnt',
+                'segment':
+                    gtf.Segment(183054636, 183056584),
+                'transcript_name':
+                    '',
+                'exons':
+                    gtf.SegmentCollection([
+                        gtf.Segment(183054636, 183055283),
+                        gtf.Segment(183055283, 183056584)
+                    ]),
+                'introns':
+                    gtf.SegmentCollection()
+            }
+        }, transcript_infos)
+
 
 class TestSegment(mixins.TestMixin, TestCase):
 
