@@ -69,3 +69,4 @@ class TestMixin(TestCase):
 
         cls.gtf_dir = os.path.join(cls.fixtures_dir, 'gtf')
         cls.gtf_path = os.path.join(cls.gtf_dir, 'not_sorted.gtf')
+        cls.zero_length_gtf_path = os.path.join(cls.gtf_dir, 'zero_length.gtf')

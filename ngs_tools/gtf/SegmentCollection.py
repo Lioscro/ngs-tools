@@ -121,6 +121,9 @@ class SegmentCollection:
         segments = []
         combined = None
         for segment in self._segments:
+            # Ignore any length 0 segments.
+            if segment.width == 0:
+                continue
             if combined is None:
                 combined = segment
                 continue

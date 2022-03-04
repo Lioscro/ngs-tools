@@ -1,5 +1,6 @@
 import functools
 import gzip
+import io
 import os
 import pickle
 import queue
@@ -12,7 +13,8 @@ from abc import abstractmethod
 from contextlib import contextmanager
 from operator import add
 from typing import Any, Callable, Generator, List, Optional, TextIO, Tuple, Union
-from urllib.request import urlretrieve
+from urllib.parse import urlparse
+from urllib.request import urlopen, urlretrieve
 
 from joblib import Parallel
 from tqdm import tqdm
@@ -269,6 +271,18 @@ class ParallelWithProgress(Parallel):
         self._pbar.refresh()
 
 
+def is_remote(path: str) -> bool:
+    """Check if a string is a remote URL.
+
+    Args:
+        path: string to check
+
+    Returns:
+        True or False
+    """
+    return bool(urlparse(path).scheme)
+
+
 def is_gzip(path: str) -> bool:
     """Check if a file is Gzipped by checking the magic string.
 
@@ -278,8 +292,11 @@ def is_gzip(path: str) -> bool:
     Returns:
         True or False
     """
-    if os.path.isfile(path):
-        magic = b'\x1f\x8b'
+    magic = b'\x1f\x8b'
+    if is_remote(path):
+        with urlopen(path) as f:
+            return magic == f.read(len(magic))
+    elif os.path.isfile(path):
         with open(path, 'rb') as f:
             return magic == f.read(len(magic))
     else:
@@ -483,8 +500,11 @@ class FileWrapper:
         self._open()
 
     @property
+    def is_remote(self) -> bool:
+        return is_remote(self.path)
+
+    @property
     def is_gzip(self) -> bool:
-        """Whether or not the file is gzipped"""
         return is_gzip(self.path)
 
     def __del__(self):
@@ -505,7 +525,20 @@ class FileWrapper:
 
     def _open(self):
         """Open the file"""
-        self.fp = open_as_text(self.path, self.mode)
+
+        if self.is_remote:
+            if self.mode != 'r':
+                raise IOError(
+                    f'Remote URLs may not be opened in `{self.mode}` mode'
+                )
+
+            self.fp = urlopen(self.path)
+            if self.is_gzip:
+                self.fp = io.TextIOWrapper(
+                    gzip.GzipFile(fileobj=self.fp, mode=self.mode)
+                )
+        else:
+            self.fp = open_as_text(self.path, self.mode)
 
     def close(self):
         """Close the (possibly already-closed) file"""

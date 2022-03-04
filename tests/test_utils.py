@@ -81,6 +81,10 @@ class TestUtils(mixins.TestMixin, TestCase):
         self.assertTrue(utils.is_gzip(self.fastq_gz_path))
         self.assertFalse(utils.is_gzip(self.fastq_path))
 
+    def test_is_remote(self):
+        self.assertFalse(utils.is_remote('path/to/local/file'))
+        self.assertTrue(utils.is_remote('https://path/to/remote/file'))
+
     def test_mkstemp(self):
         path = utils.mkstemp()
         self.assertTrue(os.path.exists(path))

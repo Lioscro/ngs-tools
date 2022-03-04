@@ -21,9 +21,9 @@ class Segment:
             end: Segment end
 
         Raises:
-            SegmentError: If ``end <= start`` or ``start < 0``
+            SegmentError: If ``end < start`` or ``start < 0``
         """
-        if end <= start or start < 0:
+        if end < start or start < 0:
             raise SegmentError(f'Invalid segment [{start}:{end})')
 
         self._start = start
