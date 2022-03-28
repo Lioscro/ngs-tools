@@ -366,6 +366,7 @@ _BDWTA = SingleCellChemistry(
         SubSequenceDefinition(0, 43, 9),
     ),
     umi_parser=SubSequenceParser(SubSequenceDefinition(0, 52, 8)),
+    whitelist_path=os.path.join(WHITELISTS_DIR, 'BDWTA_whitelist.txt.gz'),
 )
 _SPLITSEQ = SingleCellChemistry(
     name='SPLiT-seq',
