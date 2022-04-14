@@ -262,18 +262,12 @@ class ChemistryError(Exception):
 
 
 class Chemistry(ABC):
-    """Base class to represent a sequencing chemistry.
+    """Base class to represent any kind of chemistry.
 
     Attributes:
         _name: Chemistry name; for internal use only. Use :attr:`name` instead.
         _description: Chemistry description; for internal use only. Use
             :attr:`description` instead.
-        _n: Number of sequences (i.e. reads) that make up a single entry for this
-            chemistry. For example, for paired-end reads this would be 2 (for each pair);
-            for internal use only. Use :attr:`n` instead.
-        _parsers: Dictionary containing :class:`SubSequenceParser` instances used to
-            parse each group of :attr:`n` sequences. Each key represents a unique
-            subsequence, such as cell barcode, UMI, etc. For internal use only.
         _files: Dictionary containing files related to this chemistry. For internal
             use only.
     """
@@ -282,16 +276,12 @@ class Chemistry(ABC):
         self,
         name: str,
         description: str,
-        n: int,
-        parsers: Dict[str, SubSequenceParser],
-        files: Optional[Dict[str, str]] = None,
+        files: Optional[Dict[str, str]] = None
     ):
         """
         Args:
             name: Chemistry name
             description: Chemistry description
-            n: Number of sequences
-            parsers: Dictionary of parsers
             files: Dictionary of files
 
         Raises:
@@ -299,8 +289,6 @@ class Chemistry(ABC):
         """
         self._name = name
         self._description = description
-        self._n = n
-        self._parsers = parsers
         self._files = files or {}
 
         # Check that all files exist
@@ -317,6 +305,26 @@ class Chemistry(ABC):
     def description(self) -> str:
         """Chemistry description"""
         return self._description
+
+    def has_file(self, name: str) -> bool:
+        """Whether :attr:`_files` contains a file with the specified name"""
+        return name in self._files
+
+    def get_file(self, name: str) -> bool:
+        """Get a file path by its name"""
+        return self._files[name]
+
+
+class SequencingChemistry(Chemistry):
+    """Base class to represent a sequencing chemistry.
+    """
+
+    def __init__(
+        self, n: int, parsers: Dict[str, SubSequenceParser], *args, **kwargs
+    ):
+        super().__init__(*args, **kwargs)
+        self._n = n
+        self._parsers = parsers
 
     @property
     def n(self) -> int:
@@ -352,14 +360,6 @@ class Chemistry(ABC):
     def has_parser(self, name: str) -> bool:
         """Whether :attr:`_parsers` contains a parser with the specified name"""
         return name in self._parsers
-
-    def has_file(self, name: str) -> bool:
-        """Whether :attr:`_files` contains a file with the specified name"""
-        return name in self._files
-
-    def get_file(self, name: str) -> bool:
-        """Get a file path by its name"""
-        return self._files[name]
 
     def reorder(self, reordering: List[int]) -> 'Chemistry':
         """Reorder the file indices according to the ``reordering`` list. This
@@ -477,3 +477,104 @@ class Chemistry(ABC):
     @property
     def whitelist_path(self):
         raise NotImplementedError()
+
+    def to_kallisto_bus_arguments(self) -> Dict[str, str]:
+        """Convert this spatial chemistry definition to arguments that
+        can be used as input to kallisto bus. https://www.kallistobus.tools/
+
+        Returns:
+            A Dictionary of arguments-to-value mappings. For this particular
+            function, the dictionary has a single `-x` key and the value is
+            a custom technology definition string, as specified in the
+            kallisto manual.
+        """
+        if not self.has_barcode or not self.has_umi:
+            raise ChemistryError(
+                'Kallisto bus arguments require both `spot_barcode` and `umi` to be present.'
+            )
+
+        barcodes = []
+        for _def in self.barcode_parser:
+            index = _def.index
+            start = _def.start or 0
+            end = _def.end or 0
+            barcodes.append(f'{index},{start},{end}')
+
+        umis = []
+        for _def in self.umi_parser:
+            index = _def.index
+            start = _def.start or 0
+            end = _def.end or 0
+            umis.append(f'{index},{start},{end}')
+
+        cdnas = []
+        for _def in self.cdna_parser:
+            index = _def.index
+            start = _def.start or 0
+            end = _def.end or 0
+            cdnas.append(f'{index},{start},{end}')
+
+        return {
+            '-x': f'{",".join(barcodes)}:{",".join(umis)}:{",".join(cdnas)}'
+        }
+
+    def to_starsolo_arguments(self) -> Dict[str, str]:
+        """Converts this spatial chemistry definition to arguments that can
+        be used as input to STARsolo.
+        https://github.com/alexdobin/STAR/blob/master/docs/STARsolo.md
+
+        Returns:
+            A Dictionary of arguments-to-value mappings.
+        """
+        args = {}
+        if not self.has_barcode and not self.has_umi:
+            # This must be smartseq. All cDNA definitions must be the entire
+            # read, and there can be at most two.
+            args['--soloType'] = 'SmartSeq'
+            return args
+
+        # Otherwise, spot barcode and UMI must exist and there must be a single
+        # cDNA definition that uses the entire read.
+        if not self.has_barcode or not self.has_umi:
+            raise ChemistryError(
+                'STARsolo requires `spot_barcode` and `umi` parsers.'
+            )
+        # Also, barcode and UMIs must come from the same read.
+        if any(self.barcode_parser[0].index != _def.index
+               for _def in list(self.barcode_parser) + list(self.umi_parser)):
+            raise ChemistryError(
+                'STARsolo requires spot barcode and UMI to come from the same read pair.'
+            )
+        # Start and end positions of spot barcode and UMI must be specified.
+        if any(_def.end is None
+               for _def in list(self.barcode_parser) + list(self.umi_parser)):
+            raise ChemistryError(
+                'STARsolo requires defined lengths for spot barcode and UMI positions.'
+            )
+
+        # Determine if CB_UMI_Simple or CB_UMI_Complex. If either barcode or
+        # umi has multiple definitions, we co with complex.
+        # NOTE: starsolo uses 1-indexing for start positions when CB_UMI_Simple
+        # but 0-indexing for CB_UMI_Complex, while end position is inclusive
+        if len(self.barcode_parser) == 1 and len(self.umi_parser) == 1:
+            barcode_definition = self.barcode_parser[0]
+            umi_definition = self.umi_parser[0]
+            args['--soloType'] = 'CB_UMI_Simple'
+            args['--soloCBstart'] = barcode_definition.start + 1
+            args['--soloCBlen'] = barcode_definition.length
+            args['--soloUMIstart'] = umi_definition.start + 1
+            args['--soloUMIlen'] = umi_definition.length
+        else:
+            args['--soloType'] = 'CB_UMI_Complex'
+            # No anchoring is supported yet. TODO: anchoring
+            args['--soloCBposition'] = [
+                f'0_{_def.start}_0_{_def.end-1}' for _def in self.barcode_parser
+            ]
+            args['--soloUMIposition'] = [
+                f'0_{_def.start}_0_{_def.end-1}' for _def in self.umi_parser
+            ]
+
+        # Add whitelist
+        args['--soloCBwhitelist'
+             ] = self.whitelist_path if self.has_whitelist else 'None'
+        return args

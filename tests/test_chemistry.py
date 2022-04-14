@@ -62,14 +62,17 @@ class TestSubSequenceParser(TestMixin, TestCase):
         self.assertTrue(parser1 == parser3)
 
 
-class TestChemistry(TestMixin, TestCase):
+class TestSequencingChemistry(TestMixin, TestCase):
 
     def test_reorder(self):
         def1 = chemistry.SubSequenceDefinition(0, 0, 1)
         def2 = chemistry.SubSequenceDefinition(1, 1, None)
         parser = chemistry.SubSequenceParser(def1, def2)
-        chem = chemistry.Chemistry(
-            'test', 'description', 2, {'testing': parser}
+        chem = chemistry.SequencingChemistry(
+            name='test',
+            description='description',
+            n=2,
+            parsers={'testing': parser}
         )
         reordered = chem.reorder([1, 0])
         self.assertEqual(2, reordered.n)
@@ -85,8 +88,11 @@ class TestChemistry(TestMixin, TestCase):
         def1 = chemistry.SubSequenceDefinition(0, 0, 1)
         def2 = chemistry.SubSequenceDefinition(1, 1, None)
         parser = chemistry.SubSequenceParser(def1, def2)
-        chem = chemistry.Chemistry(
-            'test', 'description', 2, {'testing': parser}
+        chem = chemistry.SequencingChemistry(
+            name='test',
+            description='description',
+            n=2,
+            parsers={'testing': parser}
         )
         self.assertEqual({'testing': ('a', 'fgh')}, chem.parse(['abcd',
                                                                 'efgh']))
@@ -95,8 +101,11 @@ class TestChemistry(TestMixin, TestCase):
         def1 = chemistry.SubSequenceDefinition(0, 0, 1)
         def2 = chemistry.SubSequenceDefinition(1, 1, None)
         parser = chemistry.SubSequenceParser(def1, def2)
-        chem = chemistry.Chemistry(
-            'test', 'description', 2, {'testing': parser}
+        chem = chemistry.SequencingChemistry(
+            name='test',
+            description='description',
+            n=2,
+            parsers={'testing': parser}
         )
         read1 = fastq.Read('@1', 'ACGT', 'ABCD')
         read2 = fastq.Read('@1', 'CGTA', '1234')
@@ -110,26 +119,38 @@ class TestChemistry(TestMixin, TestCase):
         parser1 = chemistry.SubSequenceParser(def1, def2)
         parser2 = chemistry.SubSequenceParser(def2, def3)
         parser3 = chemistry.SubSequenceParser(def1, def2)
-        chem1 = chemistry.Chemistry(
-            'test', 'description', 2, {
+        chem1 = chemistry.SequencingChemistry(
+            name='test',
+            description='description',
+            n=2,
+            parsers={
                 'testing': parser1,
                 'testing2': parser2
             }
         )
-        chem2 = chemistry.Chemistry(
-            'test2', 'description2', 2, {
+        chem2 = chemistry.SequencingChemistry(
+            name='test2',
+            description='description2',
+            n=2,
+            parsers={
                 'testing': parser1,
                 'testing2': parser2
             }
         )
-        chem3 = chemistry.Chemistry(
-            'test3', 'description3', 3, {
+        chem3 = chemistry.SequencingChemistry(
+            name='test3',
+            description='description3',
+            n=3,
+            parsers={
                 'testing': parser1,
                 'testing2': parser2
             }
         )
-        chem4 = chemistry.Chemistry(
-            'test4', 'description4', 2, {
+        chem4 = chemistry.SequencingChemistry(
+            name='test4',
+            description='description4',
+            n=2,
+            parsers={
                 'testing': parser2,
                 'testing2': parser3
             }
@@ -158,7 +179,7 @@ class TestChemistry(TestMixin, TestCase):
                          chem.to_kallisto_bus_arguments())
 
         chem = chemistry.get_chemistry('smartseqv2')
-        with self.assertRaises(chemistry.SingleCellChemistryError):
+        with self.assertRaises(chemistry.ChemistryError):
             chem.to_kallisto_bus_arguments()
 
     def test_to_starsolo_arguments(self):
@@ -181,7 +202,7 @@ class TestChemistry(TestMixin, TestCase):
         }, chem.to_starsolo_arguments())
 
         chem = chemistry.get_chemistry('indropsv3')
-        with self.assertRaises(chemistry.SingleCellChemistryError):
+        with self.assertRaises(chemistry.ChemistryError):
             chem.to_starsolo_arguments()
 
         chem = chemistry.get_chemistry('slideseq2')
