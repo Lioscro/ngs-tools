@@ -1,8 +1,8 @@
 import os
-from typing import Dict, Optional
+from typing import Optional
 
 from .Chemistry import (
-    Chemistry,
+    SequencingChemistry,
     SubSequenceDefinition,
     SubSequenceParser,
     WHITELISTS_DIR,
@@ -13,8 +13,8 @@ class SingleCellChemistryError(Exception):
     pass
 
 
-class SingleCellChemistry(Chemistry):
-    """Extends :class:`Chemistry` to be able to handle common single-cell
+class SingleCellChemistry(SequencingChemistry):
+    """Extends :class:`SequencingChemistry` to be able to handle common single-cell
     chemistries.
     """
 
@@ -41,8 +41,13 @@ class SingleCellChemistry(Chemistry):
         if feature_map_path is not None:
             files['feature_map'] = feature_map_path
 
-        super(SingleCellChemistry,
-              self).__init__(name, description, n, parsers, files)
+        super().__init__(
+            name=name,
+            description=description,
+            n=n,
+            parsers=parsers,
+            files=files
+        )
 
     @property
     def cell_barcode_parser(self) -> SubSequenceParser:
@@ -98,110 +103,6 @@ class SingleCellChemistry(Chemistry):
     def feature_map_path(self) -> str:
         """Path to the feature map"""
         return self.get_file('feature_map')
-
-    def to_kallisto_bus_arguments(self) -> Dict[str, str]:
-        """Convert this single-cell chemistry definition to arguments that
-        can be used as input to kallisto bus. https://www.kallistobus.tools/
-
-        Returns:
-            A Dictionary of arguments-to-value mappings. For this particular
-            function, the dictionary has a single `-x` key and the value is
-            a custom technology definition string, as specified in the
-            kallisto manual.
-        """
-        if not self.has_cell_barcode or not self.has_umi:
-            raise SingleCellChemistryError(
-                'Kallisto bus arguments require both `cell_barcode` and `umi` to be present.'
-            )
-
-        cell_barcodes = []
-        for _def in self.cell_barcode_parser:
-            index = _def.index
-            start = _def.start or 0
-            end = _def.end or 0
-            cell_barcodes.append(f'{index},{start},{end}')
-
-        umis = []
-        for _def in self.umi_parser:
-            index = _def.index
-            start = _def.start or 0
-            end = _def.end or 0
-            umis.append(f'{index},{start},{end}')
-
-        cdnas = []
-        for _def in self.cdna_parser:
-            index = _def.index
-            start = _def.start or 0
-            end = _def.end or 0
-            cdnas.append(f'{index},{start},{end}')
-
-        return {
-            '-x':
-                f'{",".join(cell_barcodes)}:{",".join(umis)}:{",".join(cdnas)}'
-        }
-
-    def to_starsolo_arguments(self) -> Dict[str, str]:
-        """Converts this single-cell chemistry definition to arguments that can
-        be used as input to STARsolo.
-        https://github.com/alexdobin/STAR/blob/master/docs/STARsolo.md
-
-        Returns:
-            A Dictionary of arguments-to-value mappings.
-        """
-        args = {}
-        if not self.has_cell_barcode and not self.has_umi:
-            # This must be smartseq. All cDNA definitions must be the entire
-            # read, and there can be at most two.
-            args['--soloType'] = 'SmartSeq'
-            return args
-
-        # Otherwise, cell barcode and UMI must exist and there must be a single
-        # cDNA definition that uses the entire read.
-        if not self.has_cell_barcode or not self.has_umi:
-            raise SingleCellChemistryError(
-                'STARsolo requires `cell_barcode` and `umi` parsers.'
-            )
-        # Also, barcode and UMIs must come from the same read.
-        if any(self.cell_barcode_parser[0].index != _def.index
-               for _def in list(self.cell_barcode_parser) +
-               list(self.umi_parser)):
-            raise SingleCellChemistryError(
-                'STARsolo requires cell barcode and UMI to come from the same read pair.'
-            )
-        # Start and end positions of cell barcode and UMI must be specified.
-        if any(_def.end is None for _def in list(self.cell_barcode_parser) +
-               list(self.umi_parser)):
-            raise SingleCellChemistryError(
-                'STARsolo requires defined lengths for cell barcode and UMI positions.'
-            )
-
-        # Determine if CB_UMI_Simple or CB_UMI_Complex. If either barcode or
-        # umi has multiple definitions, we co with complex.
-        # NOTE: starsolo uses 1-indexing for start positions when CB_UMI_Simple
-        # but 0-indexing for CB_UMI_Complex, while end position is inclusive
-        if len(self.cell_barcode_parser) == 1 and len(self.umi_parser) == 1:
-            barcode_definition = self.cell_barcode_parser[0]
-            umi_definition = self.umi_parser[0]
-            args['--soloType'] = 'CB_UMI_Simple'
-            args['--soloCBstart'] = barcode_definition.start + 1
-            args['--soloCBlen'] = barcode_definition.length
-            args['--soloUMIstart'] = umi_definition.start + 1
-            args['--soloUMIlen'] = umi_definition.length
-        else:
-            args['--soloType'] = 'CB_UMI_Complex'
-            # No anchoring is supported yet. TODO: anchoring
-            args['--soloCBposition'] = [
-                f'0_{_def.start}_0_{_def.end-1}'
-                for _def in self.cell_barcode_parser
-            ]
-            args['--soloUMIposition'] = [
-                f'0_{_def.start}_0_{_def.end-1}' for _def in self.umi_parser
-            ]
-
-        # Add whitelist
-        args['--soloCBwhitelist'
-             ] = self.whitelist_path if self.has_whitelist else 'None'
-        return args
 
 
 # Single cell chemistry definitions

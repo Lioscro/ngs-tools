@@ -1,6 +1,7 @@
 import re
 
 from .Chemistry import (
+    SequencingChemistry,
     SubSequenceDefinition,
     SubSequenceDefinitionError,
     SubSequenceParser,
