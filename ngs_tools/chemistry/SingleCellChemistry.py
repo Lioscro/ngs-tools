@@ -27,7 +27,6 @@ class SingleCellChemistry(SequencingChemistry):
         cell_barcode_parser: Optional[SubSequenceParser] = None,
         umi_parser: Optional[SubSequenceParser] = None,
         whitelist_path: Optional[str] = None,
-        feature_map_path: Optional[str] = None,
     ):
         parsers = {'cdna': cdna_parser}
         if cell_barcode_parser is not None:
@@ -38,8 +37,6 @@ class SingleCellChemistry(SequencingChemistry):
         files = {}
         if whitelist_path is not None:
             files['whitelist'] = whitelist_path
-        if feature_map_path is not None:
-            files['feature_map'] = feature_map_path
 
         super().__init__(
             name=name,
@@ -94,16 +91,6 @@ class SingleCellChemistry(SequencingChemistry):
         """Path to the whitelist"""
         return self.get_file('whitelist')
 
-    @property
-    def has_feature_map(self) -> bool:
-        """Whether the chemistry has a feature barcode map"""
-        return self.has_file('feature_map')
-
-    @property
-    def feature_map_path(self) -> str:
-        """Path to the feature map"""
-        return self.get_file('feature_map')
-
 
 # Single cell chemistry definitions
 _10X_V1 = SingleCellChemistry(
@@ -139,9 +126,26 @@ _10X_V3 = SingleCellChemistry(
     whitelist_path=os.path.join(
         WHITELISTS_DIR, '10x_version3_whitelist.txt.gz'
     ),
-    feature_map_path=os.path.join(
-        WHITELISTS_DIR, '10x_version3_feature_map.txt.gz'
-    )
+)
+_10X_FB = SingleCellChemistry(
+    name='10xFBonly',
+    description='10x Genomics Feature Barcoding',
+    n=2,
+    cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
+    cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 16)),
+    umi_parser=SubSequenceParser(SubSequenceDefinition(0, 16, 12)),
+    whitelist_path=os.path.join(WHITELISTS_DIR, '10x_fb_whitelist.txt.gz')
+)
+_10X_ATAC = SingleCellChemistry(
+    name='10xATAC',
+    description='10x Genomics ATAC-seq',
+    n=3,
+    cdna_parser=SubSequenceParser(
+        SubSequenceDefinition(0), SubSequenceDefinition(1)
+    ),
+    cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(2, 0, 16)),
+    umi_parser=None,
+    whitelist_path=os.path.join(WHITELISTS_DIR, '10x_atac_whitelist.txt.gz'),
 )
 _DROPSEQ = SingleCellChemistry(
     name='Drop-seq',
@@ -283,8 +287,8 @@ _SPLITSEQ = SingleCellChemistry(
 )
 _PLATE_SINGLE_CELL_CHEMISTRIES = [_SMARTSEQ_V2, _SMARTSEQ_V3, _BDWTA]
 _DROPLET_SINGLE_CELL_CHEMISTRIES = [
-    _DROPSEQ, _10X_V1, _10X_V2, _10X_V3, _INDROPS_V1, _INDROPS_V2, _INDROPS_V3,
-    _SURECELL, _SCI_FATE
+    _DROPSEQ, _10X_V1, _10X_V2, _10X_V3, _10X_FB, _10X_ATAC, _INDROPS_V1,
+    _INDROPS_V2, _INDROPS_V3, _SURECELL, _SCI_FATE
 ]
 _OTHER_SINGLE_CELL_CHEMISTRIES = [_CELSEQ_V1, _CELSEQ_V2, _SCRBSEQ, _SPLITSEQ]
 SINGLE_CELL_CHEMISTRIES = (

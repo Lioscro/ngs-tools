@@ -9,6 +9,9 @@ from .Chemistry import (
     Chemistry,
     ChemistryError,
 )
+from .MultimodalChemistry import (
+    MultimodalChemistry, MultimodalChemistryError, MULTIMODAL_CHEMISTRIES
+)
 from .SingleCellChemistry import (
     SingleCellChemistry,
     SingleCellChemistryError,
@@ -20,7 +23,7 @@ from .SpatialChemistry import (
 )
 
 VERSION_PARSER = re.compile(r'v?\d+$')
-CHEMISTRIES = SINGLE_CELL_CHEMISTRIES + SPATIAL_CHEMISTRIES
+CHEMISTRIES = SINGLE_CELL_CHEMISTRIES + SPATIAL_CHEMISTRIES + MULTIMODAL_CHEMISTRIES
 
 
 def _clean_name(name: str):
