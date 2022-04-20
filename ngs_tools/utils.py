@@ -690,7 +690,9 @@ def merge_dictionaries(
     def get_nested(d, t, default=None):
         inner = d
         for k in t[:-1]:
-            inner = inner.get(k, {})
+            if k not in inner:
+                return default() if callable(default) else default
+            inner = inner[k]
         return inner.get(t[-1], default() if callable(default) else default)
 
     # Extract all keys
