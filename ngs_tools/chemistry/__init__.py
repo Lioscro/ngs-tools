@@ -19,6 +19,7 @@ from .SingleCellChemistry import (
 )
 from .SpatialChemistry import (
     SpatialChemistry,
+    SpatialResolution,
     SpatialSequencingChemistry,
     SPATIAL_CHEMISTRIES,
 )
