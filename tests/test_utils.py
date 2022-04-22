@@ -235,9 +235,9 @@ class TestUtils(mixins.TestMixin, TestCase):
                           (('e', 'h', 'i'), 'j')],
                          list(utils.flatten_dictionary(d)))
 
-    def test_flatten_list(self):
-        lst = [1, [2, 3], [4, [5, 6]]]
-        self.assertEqual([1, 2, 3, 4, 5, 6], list(utils.flatten_list(lst)))
+    def test_flatten_iter(self):
+        lst = [1, [2, 3], [4, [5, 'str']]]
+        self.assertEqual([1, 2, 3, 4, 5, 'str'], list(utils.flatten_iter(lst)))
 
     def test_merge_dictionaries(self):
         d1 = {'a': 'b', 'c': {'d': 'e'}, 'f': 'g'}

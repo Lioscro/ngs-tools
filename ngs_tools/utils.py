@@ -12,7 +12,7 @@ import threading
 from abc import abstractmethod
 from contextlib import contextmanager
 from operator import add
-from typing import Any, Callable, Generator, List, Optional, TextIO, Tuple, Union
+from typing import Any, Callable, Generator, Iterable, List, Optional, TextIO, Tuple, Union
 from urllib.parse import urlparse
 from urllib.request import urlopen, urlretrieve
 
@@ -641,23 +641,33 @@ def flatten_dictionary(
             yield new_keys, v
 
 
-def flatten_list(lst: list) -> Generator[object, None, None]:
-    """Generator that flattens the given list.
+def flatten_iter(it: Iterable) -> Generator[object, None, None]:
+    """Generator that flattens the given iterable, except for strings.
 
     Args:
-        lst: List to flatten
+        lst: Iterable to flatten
 
     Yields:
-        Flattened list elements
+        Flattened iterable elements
     """
-    if not isinstance(lst, list):
-        yield lst
 
-    for element in lst:
-        if not isinstance(element, list):
+    def is_iterable(i):
+        if isinstance(i, str):
+            return False
+        try:
+            iter(i)
+            return True
+        except TypeError:
+            return False
+
+    if not is_iterable(it):
+        yield it
+
+    for element in it:
+        if not is_iterable(element):
             yield element
         else:
-            yield from flatten_list(element)
+            yield from flatten_iter(element)
 
 
 def merge_dictionaries(
