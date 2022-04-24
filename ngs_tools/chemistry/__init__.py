@@ -1,27 +1,29 @@
 import re
 
 from .Chemistry import (
+    Chemistry,
+    ChemistryError,
     SequencingChemistry,
     SubSequenceDefinition,
     SubSequenceDefinitionError,
     SubSequenceParser,
     SubSequenceParserError,
-    Chemistry,
-    ChemistryError,
 )
 from .MultimodalChemistry import (
-    MultimodalChemistry, MultimodalChemistryError, MULTIMODAL_CHEMISTRIES
+    MULTIMODAL_CHEMISTRIES,
+    MultimodalChemistry,
+    MultimodalChemistryError,
 )
 from .SingleCellChemistry import (
+    SINGLE_CELL_CHEMISTRIES,
     SingleCellChemistry,
     SingleCellChemistryError,
-    SINGLE_CELL_CHEMISTRIES,
 )
 from .SpatialChemistry import (
+    SPATIAL_CHEMISTRIES,
     SpatialChemistry,
     SpatialResolution,
     SpatialSequencingChemistry,
-    SPATIAL_CHEMISTRIES,
 )
 
 VERSION_PARSER = re.compile(r'v?\d+$')

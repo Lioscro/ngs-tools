@@ -2,7 +2,7 @@ import gzip
 import os
 import shutil
 import tempfile
-from unittest import mock, TestCase
+from unittest import TestCase, mock
 
 
 def tqdm_mock(*args, **kwargs):

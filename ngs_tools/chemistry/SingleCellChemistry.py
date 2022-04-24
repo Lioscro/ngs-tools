@@ -2,10 +2,10 @@ import os
 from typing import Optional
 
 from .Chemistry import (
+    WHITELISTS_DIR,
     SequencingChemistry,
     SubSequenceDefinition,
     SubSequenceParser,
-    WHITELISTS_DIR,
 )
 
 

@@ -1,10 +1,9 @@
 import os
-from unittest import mock, TestCase
+from unittest import TestCase, mock
 
 import pysam
 
 from ngs_tools import bam
-
 from tests.mixins import TestMixin, tqdm_mock
 
 

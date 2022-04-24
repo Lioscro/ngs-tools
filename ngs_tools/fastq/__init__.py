@@ -5,15 +5,8 @@ import shortuuid
 
 from ..chemistry import Chemistry
 from ..progress import progress
-from .Fastq import (
-    Fastq,
-    FastqError,
-)
-from .Read import (
-    Read,
-    ReadError,
-    Quality,
-)
+from .Fastq import Fastq, FastqError
+from .Read import Quality, Read, ReadError
 
 
 def fastq_to_bam(

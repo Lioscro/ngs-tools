@@ -5,14 +5,25 @@ import os
 import pickle
 import queue
 import shutil
+import stat
 import subprocess
 import tempfile
-import time
 import threading
+import time
 from abc import abstractmethod
 from contextlib import contextmanager
 from operator import add
-from typing import Any, Callable, Generator, Iterable, List, Optional, TextIO, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Generator,
+    Iterable,
+    List,
+    Optional,
+    TextIO,
+    Tuple,
+    Union,
+)
 from urllib.parse import urlparse
 from urllib.request import urlopen, urlretrieve
 
@@ -739,3 +750,10 @@ def flatten_dict_values(d: dict) -> list:
         return flattened
     else:
         return [d]
+
+
+def set_executable(path: str):
+    """Set the permissions of a file to be executable.
+    """
+    st = os.stat(path)
+    os.chmod(path, st.st_mode | stat.S_IEXEC)
