@@ -505,7 +505,6 @@ class FileWrapper:
         self.path = path
         self.mode = mode
         self.fp = None
-        self.closed = False
 
         # Immediately open file descriptor
         self._open()
@@ -517,6 +516,12 @@ class FileWrapper:
     @property
     def is_gzip(self) -> bool:
         return is_gzip(self.path)
+
+    @property
+    def closed(self) -> bool:
+        if self.fp is None:
+            return True
+        return self.fp.closed
 
     def __del__(self):
         self.close()
@@ -536,6 +541,8 @@ class FileWrapper:
 
     def _open(self):
         """Open the file"""
+        # Make sure to close the previous fp, if it is still open.
+        self.close()
 
         if self.is_remote:
             if self.mode != 'r':
@@ -553,7 +560,7 @@ class FileWrapper:
 
     def close(self):
         """Close the (possibly already-closed) file"""
-        if self.fp is not None and not self.fp.closed:
+        if not self.closed:
             self.fp.close()
 
     def reset(self):
