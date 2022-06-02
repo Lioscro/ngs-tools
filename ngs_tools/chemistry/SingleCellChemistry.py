@@ -127,6 +127,16 @@ _10X_V3 = SingleCellChemistry(
         WHITELISTS_DIR, '10x_version3_whitelist.txt.gz'
     ),
 )
+
+_10X_V3_ULTIMA = SingleCellChemistry(
+    name='10xv3_Ultima',
+    description='10x Genomics 3\' version 3 sequenced with Ultima',
+    n=1,
+    cdna_parser=SubSequenceParser(SubSequenceDefinition(0, 28, None)),
+    cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 16)),
+    umi_parser=SubSequenceParser(SubSequenceDefinition(0, 16, 12)),
+)
+
 _10X_FB = SingleCellChemistry(
     name='10xFBonly',
     description='10x Genomics Feature Barcoding',
@@ -287,7 +297,7 @@ _SPLITSEQ = SingleCellChemistry(
 )
 _PLATE_SINGLE_CELL_CHEMISTRIES = [_SMARTSEQ_V2, _SMARTSEQ_V3, _BDWTA]
 _DROPLET_SINGLE_CELL_CHEMISTRIES = [
-    _DROPSEQ, _10X_V1, _10X_V2, _10X_V3, _10X_FB, _10X_ATAC, _INDROPS_V1,
+    _DROPSEQ, _10X_V1, _10X_V2, _10X_V3, _10X_V3_ULTIMA, _10X_FB, _10X_ATAC, _INDROPS_V1,
     _INDROPS_V2, _INDROPS_V3, _SURECELL, _SCI_FATE
 ]
 _OTHER_SINGLE_CELL_CHEMISTRIES = [_CELSEQ_V1, _CELSEQ_V2, _SCRBSEQ, _SPLITSEQ]
