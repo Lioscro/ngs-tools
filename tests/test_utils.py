@@ -2,7 +2,7 @@ import gzip
 import os
 import pickle
 import subprocess
-from unittest import mock, TestCase
+from unittest import TestCase, mock
 
 from joblib import delayed
 

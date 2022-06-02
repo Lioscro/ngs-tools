@@ -3,12 +3,12 @@ import os
 from typing import Dict
 
 from .Chemistry import (
+    WHITELISTS_DIR,
     Chemistry,
     SubSequenceDefinition,
     SubSequenceParser,
-    WHITELISTS_DIR,
 )
-from .SingleCellChemistry import SingleCellChemistry, _10X_FB, _10X_V3
+from .SingleCellChemistry import _10X_FB, _10X_V3, SingleCellChemistry
 
 
 class MultimodalChemistryError(Exception):

@@ -4,11 +4,11 @@ from typing import NamedTuple, Optional
 from typing_extensions import Literal
 
 from .Chemistry import (
+    WHITELISTS_DIR,
     Chemistry,
     SequencingChemistry,
     SubSequenceDefinition,
     SubSequenceParser,
-    WHITELISTS_DIR,
 )
 
 

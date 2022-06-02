@@ -3,22 +3,10 @@ from typing import Callable, Dict, Generator, List, Optional, Set, Tuple, Union
 
 from ..logging import logger
 from ..progress import progress
-from .Gtf import (
-    Gtf,
-    GtfError,
-)
-from .GtfEntry import (
-    GtfEntry,
-    GtfEntryError,
-)
-from .Segment import (
-    Segment,
-    SegmentError,
-)
-from .SegmentCollection import (
-    SegmentCollection,
-    SegmentCollectionError,
-)
+from .Gtf import Gtf, GtfError
+from .GtfEntry import GtfEntry, GtfEntryError
+from .Segment import Segment, SegmentError
+from .SegmentCollection import SegmentCollection, SegmentCollectionError
 
 
 def parse_gtf(

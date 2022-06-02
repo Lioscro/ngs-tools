@@ -7,6 +7,7 @@ import numpy as np
 import pysam
 from joblib import delayed
 from numba import njit
+
 try:
     from pyseq_align import NeedlemanWunsch
 except ImportError:

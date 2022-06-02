@@ -1,7 +1,6 @@
 from unittest import TestCase
 
 from ngs_tools import chemistry, fastq
-
 from tests.mixins import TestMixin
 
 

@@ -1,13 +1,7 @@
 from .. import sequence
 from ..progress import progress
-from .Fasta import (
-    Fasta,
-    FastaError,
-)
-from .FastaEntry import (
-    FastaEntry,
-    FastaEntryError,
-)
+from .Fasta import Fasta, FastaError
+from .FastaEntry import FastaEntry, FastaEntryError
 
 
 def split_genomic_fasta_to_cdna(
