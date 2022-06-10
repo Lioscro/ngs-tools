@@ -2,6 +2,7 @@ import copy
 import itertools
 import os
 from abc import ABC
+from enum import Enum
 from typing import Dict, List, Optional, Tuple, Union
 
 from ..fastq.Read import Read
@@ -315,16 +316,24 @@ class Chemistry(ABC):
         return self._files[name]
 
 
+class SequencingStrand(Enum):
+    UNSTRANDED = 0
+    FORWARD = 1
+    REVERSE = -1
+
+
 class SequencingChemistry(Chemistry):
     """Base class to represent a sequencing chemistry.
     """
 
     def __init__(
-        self, n: int, parsers: Dict[str, SubSequenceParser], *args, **kwargs
+        self, n: int, strand: SequencingStrand,
+        parsers: Dict[str, SubSequenceParser], *args, **kwargs
     ):
         super().__init__(*args, **kwargs)
         self._n = n
         self._parsers = parsers
+        self._strand = strand
 
     @property
     def n(self) -> int:
@@ -335,6 +344,11 @@ class SequencingChemistry(Chemistry):
     def parsers(self) -> Dict[str, SubSequenceParser]:
         """Retrieve a copy of the :attr:`_parsers` dictionary."""
         return copy.deepcopy(self._parsers)
+
+    @property
+    def strand(self) -> SequencingStrand:
+        """Retrieve the strandedness of the chemistry."""
+        return self._strand
 
     @property
     def lengths(self) -> Tuple[int, ...]:

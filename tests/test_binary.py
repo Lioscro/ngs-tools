@@ -15,8 +15,8 @@ class TestBinary(mixins.TestMixin, TestCase):
             binary.PositionalArgument('file'),
             binary.ConstantArgument('-a', required=False),
         )
-        result = executor({'file': '.', '-a': None})
-        self.assertEqual(result.command, [shutil.which('ls'), '.', '-a'])
+        result = executor({'-a': None, 'file': '.'})
+        self.assertEqual(result.command, [shutil.which('ls'), '-a', '.'])
 
         result = executor({'file': '.'})
         self.assertEqual(result.command, [shutil.which('ls'), '.'])

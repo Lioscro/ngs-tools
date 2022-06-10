@@ -5,6 +5,7 @@ from typing import Dict
 from .Chemistry import (
     WHITELISTS_DIR,
     Chemistry,
+    SequencingStrand,
     SubSequenceDefinition,
     SubSequenceParser,
 )
@@ -82,6 +83,7 @@ _10X_MULTIOME = MultimodalChemistry(
                 name='10xMultiome_GEX',
                 description='10x Genomics Multiome (GEX)',
                 n=2,
+                strand=SequencingStrand.FORWARD,
                 cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
                 cell_barcode_parser=SubSequenceParser(
                     SubSequenceDefinition(0, 0, 16)
@@ -96,6 +98,7 @@ _10X_MULTIOME = MultimodalChemistry(
                 name='10xMultiome_ATAC',
                 description='10x Genomics Multiome (ATAC)',
                 n=3,
+                strand=SequencingStrand.FORWARD,
                 cdna_parser=SubSequenceParser(
                     SubSequenceDefinition(0), SubSequenceDefinition(1)
                 ),

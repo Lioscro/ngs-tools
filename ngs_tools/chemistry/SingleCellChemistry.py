@@ -4,6 +4,7 @@ from typing import Optional
 from .Chemistry import (
     WHITELISTS_DIR,
     SequencingChemistry,
+    SequencingStrand,
     SubSequenceDefinition,
     SubSequenceParser,
 )
@@ -23,6 +24,7 @@ class SingleCellChemistry(SequencingChemistry):
         name: str,
         description: str,
         n: int,
+        strand: SequencingStrand,
         cdna_parser: SubSequenceParser,
         cell_barcode_parser: Optional[SubSequenceParser] = None,
         umi_parser: Optional[SubSequenceParser] = None,
@@ -42,6 +44,7 @@ class SingleCellChemistry(SequencingChemistry):
             name=name,
             description=description,
             n=n,
+            strand=strand,
             parsers=parsers,
             files=files
         )
@@ -97,6 +100,7 @@ _10X_V1 = SingleCellChemistry(
     name='10xv1',
     description='10x Genomics 3\' version 1',
     n=3,
+    strand=SequencingStrand.FORWARD,
     cdna_parser=SubSequenceParser(SubSequenceDefinition(2)),
     cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 14)),
     umi_parser=SubSequenceParser(SubSequenceDefinition(1, 0, 10)),
@@ -109,6 +113,7 @@ _10X_V2 = SingleCellChemistry(
     name='10xv2',
     description='10x Genomics 3\' version 2',
     n=2,
+    strand=SequencingStrand.FORWARD,
     cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
     cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 16)),
     umi_parser=SubSequenceParser(SubSequenceDefinition(0, 16, 10)),
@@ -120,6 +125,7 @@ _10X_V3 = SingleCellChemistry(
     name='10xv3',
     description='10x Genomics 3\' version 3',
     n=2,
+    strand=SequencingStrand.FORWARD,
     cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
     cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 16)),
     umi_parser=SubSequenceParser(SubSequenceDefinition(0, 16, 12)),
@@ -132,6 +138,7 @@ _10X_V3_ULTIMA = SingleCellChemistry(
     name='10xv3_Ultima',
     description='10x Genomics 3\' version 3 sequenced with Ultima',
     n=1,
+    strand=SequencingStrand.FORWARD,
     cdna_parser=SubSequenceParser(SubSequenceDefinition(0, 62, None)),
     cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 22, 16)),
     umi_parser=SubSequenceParser(SubSequenceDefinition(0, 38, 12)),
@@ -144,6 +151,7 @@ _10X_FB = SingleCellChemistry(
     name='10xFBonly',
     description='10x Genomics Feature Barcoding',
     n=2,
+    strand=SequencingStrand.FORWARD,
     cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
     cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 16)),
     umi_parser=SubSequenceParser(SubSequenceDefinition(0, 16, 12)),
@@ -153,6 +161,7 @@ _10X_ATAC = SingleCellChemistry(
     name='10xATAC',
     description='10x Genomics ATAC-seq',
     n=3,
+    strand=SequencingStrand.FORWARD,
     cdna_parser=SubSequenceParser(
         SubSequenceDefinition(0), SubSequenceDefinition(1)
     ),
@@ -166,6 +175,7 @@ _DROPSEQ = SingleCellChemistry(
         'Droplet-based single-cell RNA-seq chemistry developed by Macosko et al. 2015'
     ),
     n=2,
+    strand=SequencingStrand.UNSTRANDED,
     cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
     cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 12)),
     umi_parser=SubSequenceParser(SubSequenceDefinition(0, 12, 8)),
@@ -174,6 +184,7 @@ _CELSEQ_V1 = SingleCellChemistry(
     name='CEL-Seq',
     description='Hashimshony et al. 2012',
     n=2,
+    strand=SequencingStrand.FORWARD,
     cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
     cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 8)),
     umi_parser=SubSequenceParser(SubSequenceDefinition(0, 8, 4)),
@@ -182,6 +193,7 @@ _CELSEQ_V2 = SingleCellChemistry(
     name='CEL-Seq2',
     description='Hashimshony et al. 2016',
     n=2,
+    strand=SequencingStrand.FORWARD,
     cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
     cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 6, 6)),
     umi_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 6)),
@@ -190,6 +202,7 @@ _INDROPS_V1 = SingleCellChemistry(
     name='inDropsv1',
     description='Zilionis et al. 2017',
     n=2,
+    strand=SequencingStrand.UNSTRANDED,
     cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
     cell_barcode_parser=SubSequenceParser(
         SubSequenceDefinition(0, 0, 11), SubSequenceDefinition(0, 30, 8)
@@ -200,6 +213,7 @@ _INDROPS_V2 = SingleCellChemistry(
     name='inDropsv2',
     description='Zilionis et al. 2017',
     n=2,
+    strand=SequencingStrand.UNSTRANDED,
     cdna_parser=SubSequenceParser(SubSequenceDefinition(0)),
     cell_barcode_parser=SubSequenceParser(
         SubSequenceDefinition(1, 0, 11), SubSequenceDefinition(1, 30, 8)
@@ -210,6 +224,7 @@ _INDROPS_V3 = SingleCellChemistry(
     name='inDropsv3',
     description='Zilionis et al. 2017',
     n=3,
+    strand=SequencingStrand.UNSTRANDED,
     cdna_parser=SubSequenceParser(SubSequenceDefinition(2)),
     cell_barcode_parser=SubSequenceParser(
         SubSequenceDefinition(0, 0, 8), SubSequenceDefinition(1, 0, 8)
@@ -223,6 +238,7 @@ _SCRBSEQ = SingleCellChemistry(
     name='SCRB-seq',
     description='Soumillon et al. 2014',
     n=2,
+    strand=SequencingStrand.UNSTRANDED,
     cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
     cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 6)),
     umi_parser=SubSequenceParser(SubSequenceDefinition(0, 6, 10)),
@@ -233,6 +249,7 @@ _SURECELL = SingleCellChemistry(
         'Illumina Bio-Rad SureCell WTA 3\' with ddSEQ Single-Cell Isolator'
     ),
     n=2,
+    strand=SequencingStrand.FORWARD,
     cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
     cell_barcode_parser=SubSequenceParser(
         SubSequenceDefinition(0, 0, 6), SubSequenceDefinition(0, 21, 6),
@@ -247,6 +264,7 @@ _SMARTSEQ_V2 = SingleCellChemistry(
         'Plate-based single-cell RNA-seq chemistry developed by Ramskold et al. 2012'
     ),
     n=2,
+    strand=SequencingStrand.UNSTRANDED,
     cdna_parser=SubSequenceParser(
         SubSequenceDefinition(0), SubSequenceDefinition(1)
     ),
@@ -257,6 +275,7 @@ _SMARTSEQ_V3 = SingleCellChemistry(
         'Plate-based single-cell RNA-seq chemistry developed by Picelli et al. 2014'
     ),
     n=2,
+    strand=SequencingStrand.UNSTRANDED,
     cdna_parser=SubSequenceParser(
         SubSequenceDefinition(0, 11, None), SubSequenceDefinition(1)
     ),
@@ -268,6 +287,7 @@ _SCI_FATE = SingleCellChemistry(
         'Single-cell RNA-seq chemistry for metabolic labeling developed by Cao et al. 2020'
     ),
     n=2,
+    strand=SequencingStrand.UNSTRANDED,
     cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
     cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 8, 10)),
     umi_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 8)),
@@ -277,6 +297,7 @@ _BDWTA = SingleCellChemistry(
     name='BD Rhapsody',
     description=('Well-based single-cell RNA-seq chemistry by BD Biosciences'),
     n=2,
+    strand=SequencingStrand.FORWARD,
     cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
     cell_barcode_parser=SubSequenceParser(
         SubSequenceDefinition(0, 0, 9),
@@ -290,6 +311,7 @@ _SPLITSEQ = SingleCellChemistry(
     name='SPLiT-seq',
     description='Rosenberg et al. 2018',
     n=2,
+    strand=SequencingStrand.UNSTRANDED,
     cdna_parser=SubSequenceParser(SubSequenceDefinition(0)),
     cell_barcode_parser=SubSequenceParser(
         SubSequenceDefinition(1, 10, 8),
