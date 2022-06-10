@@ -71,6 +71,7 @@ class TestSequencingChemistry(TestMixin, TestCase):
             name='test',
             description='description',
             n=2,
+            strand=chemistry.SequencingStrand.UNSTRANDED,
             parsers={'testing': parser}
         )
         reordered = chem.reorder([1, 0])
@@ -91,6 +92,7 @@ class TestSequencingChemistry(TestMixin, TestCase):
             name='test',
             description='description',
             n=2,
+            strand=chemistry.SequencingStrand.UNSTRANDED,
             parsers={'testing': parser}
         )
         self.assertEqual({'testing': ('a', 'fgh')}, chem.parse(['abcd',
@@ -104,6 +106,7 @@ class TestSequencingChemistry(TestMixin, TestCase):
             name='test',
             description='description',
             n=2,
+            strand=chemistry.SequencingStrand.UNSTRANDED,
             parsers={'testing': parser}
         )
         read1 = fastq.Read('@1', 'ACGT', 'ABCD')
@@ -122,6 +125,7 @@ class TestSequencingChemistry(TestMixin, TestCase):
             name='test',
             description='description',
             n=2,
+            strand=chemistry.SequencingStrand.UNSTRANDED,
             parsers={
                 'testing': parser1,
                 'testing2': parser2
@@ -131,6 +135,7 @@ class TestSequencingChemistry(TestMixin, TestCase):
             name='test2',
             description='description2',
             n=2,
+            strand=chemistry.SequencingStrand.UNSTRANDED,
             parsers={
                 'testing': parser1,
                 'testing2': parser2
@@ -140,6 +145,7 @@ class TestSequencingChemistry(TestMixin, TestCase):
             name='test3',
             description='description3',
             n=3,
+            strand=chemistry.SequencingStrand.UNSTRANDED,
             parsers={
                 'testing': parser1,
                 'testing2': parser2
@@ -149,6 +155,7 @@ class TestSequencingChemistry(TestMixin, TestCase):
             name='test4',
             description='description4',
             n=2,
+            strand=chemistry.SequencingStrand.UNSTRANDED,
             parsers={
                 'testing': parser2,
                 'testing2': parser3

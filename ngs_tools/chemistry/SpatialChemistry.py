@@ -7,6 +7,7 @@ from .Chemistry import (
     WHITELISTS_DIR,
     Chemistry,
     SequencingChemistry,
+    SequencingStrand,
     SubSequenceDefinition,
     SubSequenceParser,
 )
@@ -46,6 +47,7 @@ class SpatialSequencingChemistry(SpatialChemistry, SequencingChemistry):
         description: str,
         resolution: SpatialResolution,
         n: int,
+        strand: SequencingStrand,
         cdna_parser: SubSequenceParser,
         spot_barcode_parser: Optional[SubSequenceParser] = None,
         umi_parser: Optional[SubSequenceParser] = None,
@@ -66,6 +68,7 @@ class SpatialSequencingChemistry(SpatialChemistry, SequencingChemistry):
             description=description,
             resolution=resolution,
             n=n,
+            strand=strand,
             parsers=parsers,
             files=files,
         )
@@ -124,6 +127,7 @@ _SLIDESEQ_V2 = SpatialSequencingChemistry(
     ),
     resolution=SpatialResolution(10., 'um'),
     n=2,
+    strand=SequencingStrand.UNSTRANDED,
     cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
     spot_barcode_parser=SubSequenceParser(
         SubSequenceDefinition(0, 0, 8), SubSequenceDefinition(0, 26, 6)
@@ -135,6 +139,7 @@ _VISIUM = SpatialSequencingChemistry(
     description='10x Genomics Visium',
     resolution=SpatialResolution(55., 'um'),
     n=2,
+    strand=SequencingStrand.FORWARD,
     cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
     spot_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 16)),
     umi_parser=SubSequenceParser(SubSequenceDefinition(0, 16, 12)),
@@ -145,6 +150,7 @@ _STEREOSEQ = SpatialSequencingChemistry(
     description='BGI Stereo-seq',
     resolution=SpatialResolution(0.5, 'um'),
     n=2,
+    strand=SequencingStrand.UNSTRANDED,
     cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
     spot_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 25)),
     umi_parser=SubSequenceParser(SubSequenceDefinition(0, 25, 10)),

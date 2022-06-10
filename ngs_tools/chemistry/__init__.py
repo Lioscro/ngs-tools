@@ -4,6 +4,7 @@ from .Chemistry import (
     Chemistry,
     ChemistryError,
     SequencingChemistry,
+    SequencingStrand,
     SubSequenceDefinition,
     SubSequenceDefinitionError,
     SubSequenceParser,
