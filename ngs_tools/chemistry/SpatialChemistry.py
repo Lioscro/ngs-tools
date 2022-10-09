@@ -181,9 +181,25 @@ _SEQSCOPE_HDMI32_DRA1 = SpatialSequencingChemistry(
     spot_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 32)),
     umi_parser=SubSequenceParser(SubSequenceDefinition(0, 32, 9)),
 )
+# These are in situ methods whose resolution probably depends on microscope specs...?
+_STARMAP = SpatialChemistry(
+    name='STARmap',
+    description='Spatially-resolved Transcript Amplicon Readout Mapping',
+    resolution=None
+)
+_SEQFISH = SpatialChemistry(
+    name='seqFISH',
+    description='Sequential Fluorescence In Situ Hybridization',
+    resolution=None
+)
+_MERFISH = SpatialChemistry(
+    name='MERFISH',
+    description='Multiplexed Error-Robust Fluorescence in situ Hybridization',
+    resolution=None
+)
 _SEQUENCING_SPATIAL_CHEMISTRIES = [
     _SLIDESEQ_V2, _VISIUM, _STEREOSEQ, _SEQSCOPE_HDMI_DRAI,
     _SEQSCOPE_HDMI32_DRA1
 ]
-_INSITU_SPATIAL_CHEMISTRIES = [_COSMX]
+_INSITU_SPATIAL_CHEMISTRIES = [_COSMX, _STARMAP, _SEQFISH, _MERFISH]
 SPATIAL_CHEMISTRIES = _SEQUENCING_SPATIAL_CHEMISTRIES + _INSITU_SPATIAL_CHEMISTRIES
