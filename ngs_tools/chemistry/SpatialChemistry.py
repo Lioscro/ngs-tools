@@ -160,6 +160,30 @@ _COSMX = SpatialChemistry(
     description='NanoString CosMx Spatial Molecular Imager',
     resolution=SpatialResolution(0.18, 'um'),
 )
-_SEQUENCING_SPATIAL_CHEMISTRIES = [_SLIDESEQ_V2, _VISIUM, _STEREOSEQ]
+# Seq-Scope specifications are based on https://github.com/leeju-umich/Cho_Xi_Seqscope/blob/main/script/align.sh
+_SEQSCOPE_HDMI_DRAI = SpatialSequencingChemistry(
+    name='Seq-Scope HDMI-DraI',
+    description='Seq-Scope spatial barcoding with HDMI-DraI (20 bp) barcodes',
+    resolution=SpatialResolution(0.6, 'um'),
+    n=2,
+    strand=SequencingStrand.FORWARD,
+    cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
+    spot_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 20)),
+    umi_parser=SubSequenceParser(SubSequenceDefinition(0, 20, 9)),
+)
+_SEQSCOPE_HDMI32_DRA1 = SpatialSequencingChemistry(
+    name='Seq-Scope HDMI32-DraI',
+    description='Seq-Scope spatial barcoding with HDMI32-DraI (32 bp) barcodes',
+    resolution=SpatialResolution(0.6, 'um'),
+    n=2,
+    strand=SequencingStrand.FORWARD,
+    cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
+    spot_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 32)),
+    umi_parser=SubSequenceParser(SubSequenceDefinition(0, 32, 9)),
+)
+_SEQUENCING_SPATIAL_CHEMISTRIES = [
+    _SLIDESEQ_V2, _VISIUM, _STEREOSEQ, _SEQSCOPE_HDMI_DRAI,
+    _SEQSCOPE_HDMI32_DRA1
+]
 _INSITU_SPATIAL_CHEMISTRIES = [_COSMX]
 SPATIAL_CHEMISTRIES = _SEQUENCING_SPATIAL_CHEMISTRIES + _INSITU_SPATIAL_CHEMISTRIES
