@@ -175,6 +175,14 @@ class TestSequencingChemistry(TestMixin, TestCase):
         },
                          chemistry.get_chemistry('10xv3').parse([seq1, seq2]))
 
+    def test_stormseq(self):
+        seq1 = 'ABCEDEFGHIJKLMNOPQRSTUVWXYZ'
+        seq2 = 'abcdefghnnnnnnIJKLMNOPQRSTUVWXYZ'
+        self.assertEqual({
+            'umi': ('abcdefgh',),
+            'cdna': ('ABCEDEFGHIJKLMNOPQRSTUVWXYZ', 'IJKLMNOPQRSTUVWXYZ')
+        },
+                         chemistry.get_chemistry('STORM-seq').parse([seq1, seq2]))
     def test_to_kallisto_bus_arguments(self):
         chem = chemistry.get_chemistry('10xv3')
         self.assertEqual({'-x': '0,0,16:0,16,28:1,0,0'},
