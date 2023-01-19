@@ -146,3 +146,42 @@ def split_genomic_fasta_to_intron(
                     f_out.write(intron_entry)
 
     return out_path
+
+
+def split_genomic_fasta_to_nascent(
+    fasta_path: str,
+    out_path: str,
+    gene_infos: dict,
+    show_progress: bool = False,
+) -> str:
+    with Fasta(fasta_path, 'r') as f_in, Fasta(out_path, 'w') as f_out:
+        for entry in progress(f_in, desc='Splitting nascent',
+                              disable=not show_progress):
+            # Find all genes in this chromosome
+            _gene_infos = {}
+            for gene_id, gene_attributes in gene_infos.items():
+                if gene_attributes['chromosome'] == entry.name:
+                    _gene_infos[gene_id] = gene_attributes
+                    gene_name = gene_attributes.get('gene_name')
+                    chromosome = gene_attributes['chromosome']
+                    segment = gene_attributes['segment']
+                    strand = gene_attributes['strand']
+                    header = FastaEntry.make_header(
+                        gene_id, {
+                            'gene_id': gene_id,
+                            'gene_name': gene_name,
+                            'chr': chromosome,
+                            'start': segment.start + 1,
+                            'end': segment.end,
+                            'strand': strand
+                        }
+                    )
+
+                    s = entry.sequence[segment.start:segment.end];
+                    if s:
+                        if strand == '-':
+                            s = sequence.complement_sequence(s, reverse=True)
+                        nascent_entry = FastaEntry(header, s)
+                        f_out.write(nascent_entry)
+
+    return out_path
