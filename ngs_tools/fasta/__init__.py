@@ -152,8 +152,23 @@ def split_genomic_fasta_to_nascent(
     fasta_path: str,
     out_path: str,
     gene_infos: dict,
+    suffix = "",
     show_progress: bool = False,
 ) -> str:
+    """Split a genomic FASTA into nascent transcripts by using gene information
+    generated from extracting information from a GTF.
+
+    Args:
+        fasta_path: Path to FASTA containing genomic sequences
+        out_path: Path to output FASTA that will contain cDNA sequences
+        gene_infos: Dictionary containing gene information, as returned by
+            :func:`ngs_tools.gtf.genes_and_transcripts_from_gtf`
+        suffix: Suffix to append to output FASTA entry names. Defaults to "".
+        show_progress: Whether to display a progress bar. Defaults to False.
+
+    Returns:
+        Path to written FASTA
+    """
     with Fasta(fasta_path, 'r') as f_in, Fasta(out_path, 'w') as f_out:
         for entry in progress(f_in, desc='Splitting nascent',
                               disable=not show_progress):
@@ -167,7 +182,7 @@ def split_genomic_fasta_to_nascent(
                     segment = gene_attributes['segment']
                     strand = gene_attributes['strand']
                     header = FastaEntry.make_header(
-                        gene_id, {
+                        f'{gene_id}{suffix}', {
                             'gene_id': gene_id,
                             'gene_name': gene_name,
                             'chr': chromosome,
