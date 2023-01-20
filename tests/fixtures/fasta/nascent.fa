@@ -1,0 +1,8 @@
+>GENE_C gene_id:GENE_C gene_name:GENE_C_NAME chr:2 start:2 end:14 strand:-
+TAATCAGATCCGA
+>GENE_B gene_id:GENE_B gene_name:GENE_B_NAME chr:2 start:1 end:10 strand:+
+ATCGGATCTG
+>GENE_A gene_id:GENE_A gene_name:GENE_A_NAME chr:1 start:1 end:2 strand:+
+CA
+>GENE_D gene_id:GENE_D gene_name:GENE_D_NAME chr:1 start:1 end:2 strand:+
+CA

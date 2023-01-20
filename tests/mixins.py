@@ -44,6 +44,7 @@ class TestMixin(TestCase):
         cls.fasta2_path = os.path.join(cls.fasta_dir, 'not_sorted.fa')
         cls.cdna_fasta_path = os.path.join(cls.fasta_dir, 'cdna.fa')
         cls.intron_fasta_path = os.path.join(cls.fasta_dir, 'intron.fa')
+        cls.nascent_fasta_path = os.path.join(cls.fasta_dir, 'nascent.fa')
 
         cls.fastq_dir = os.path.join(cls.fixtures_dir, 'fastq')
         cls.fastq_path = os.path.join(cls.fastq_dir, 'small.fastq')
