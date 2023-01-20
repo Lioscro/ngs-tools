@@ -24,7 +24,7 @@ project = 'ngs-tools'
 copyright = '2021, Kyung Hoi (Joseph) Min'
 author = 'Kyung Hoi (Joseph) Min'
 
-release = '1.8.1'
+release = '1.8.2'
 master_doc = 'index'
 
 # -- General configuration ---------------------------------------------------
