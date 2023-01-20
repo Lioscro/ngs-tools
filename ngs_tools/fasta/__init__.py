@@ -152,7 +152,7 @@ def split_genomic_fasta_to_nascent(
     fasta_path: str,
     out_path: str,
     gene_infos: dict,
-    suffix = "",
+    suffix="",
     show_progress: bool = False,
 ) -> str:
     """Split a genomic FASTA into nascent transcripts by using gene information
@@ -192,7 +192,7 @@ def split_genomic_fasta_to_nascent(
                         }
                     )
 
-                    s = entry.sequence[segment.start:segment.end];
+                    s = entry.sequence[segment.start:segment.end]
                     if s:
                         if strand == '-':
                             s = sequence.complement_sequence(s, reverse=True)
