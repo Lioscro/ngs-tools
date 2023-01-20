@@ -53,8 +53,7 @@ def _clean_name(name: str):
 
         base_name = name[:version_search.start(0)]
 
-    # Cleaned name is of the form {base_name}-{version}.
-    return f'{base_name}-{version}'
+    return base_name, version
 
 
 def get_chemistry(name: str):
@@ -75,10 +74,19 @@ def get_chemistry(name: str):
     Raises:
         ChemistryError: If the chemistry could not be found.
     """
-    cleaned_name = _clean_name(name)
-
+    cleaned_name, cleaned_version = _clean_name(name)
+    matching = []
     for chemistry in CHEMISTRIES:
-        if cleaned_name == _clean_name(chemistry.name):
-            return chemistry
+        base_name, version = _clean_name(chemistry.name)
+        if cleaned_name in base_name and cleaned_version == version:
+            matching.append(chemistry)
 
-    raise ChemistryError(f'Chemistry `{name}` not found')
+    if len(matching) == 1:
+        return matching[0]
+
+    if not matching:
+        raise ChemistryError(f'Chemistry `{name}` not found')
+    else:
+        raise ChemistryError(
+            f'Multiple matching chemistries found: {[match.name for match in matching]}'
+        )

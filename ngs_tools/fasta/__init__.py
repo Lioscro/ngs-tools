@@ -146,3 +146,57 @@ def split_genomic_fasta_to_intron(
                     f_out.write(intron_entry)
 
     return out_path
+
+
+def split_genomic_fasta_to_nascent(
+    fasta_path: str,
+    out_path: str,
+    gene_infos: dict,
+    suffix="",
+    show_progress: bool = False,
+) -> str:
+    """Split a genomic FASTA into nascent transcripts by using gene information
+    generated from extracting information from a GTF.
+
+    Args:
+        fasta_path: Path to FASTA containing genomic sequences
+        out_path: Path to output FASTA that will contain cDNA sequences
+        gene_infos: Dictionary containing gene information, as returned by
+            :func:`ngs_tools.gtf.genes_and_transcripts_from_gtf`
+        suffix: Suffix to append to output FASTA entry names. Defaults to "".
+        show_progress: Whether to display a progress bar. Defaults to False.
+
+    Returns:
+        Path to written FASTA
+    """
+    with Fasta(fasta_path, 'r') as f_in, Fasta(out_path, 'w') as f_out:
+        for entry in progress(f_in, desc='Splitting nascent',
+                              disable=not show_progress):
+            # Find all genes in this chromosome
+            _gene_infos = {}
+            for gene_id, gene_attributes in gene_infos.items():
+                if gene_attributes['chromosome'] == entry.name:
+                    _gene_infos[gene_id] = gene_attributes
+                    gene_name = gene_attributes.get('gene_name')
+                    chromosome = gene_attributes['chromosome']
+                    segment = gene_attributes['segment']
+                    strand = gene_attributes['strand']
+                    header = FastaEntry.make_header(
+                        f'{gene_id}{suffix}', {
+                            'gene_id': gene_id,
+                            'gene_name': gene_name,
+                            'chr': chromosome,
+                            'start': segment.start + 1,
+                            'end': segment.end,
+                            'strand': strand
+                        }
+                    )
+
+                    s = entry.sequence[segment.start:segment.end]
+                    if s:
+                        if strand == '-':
+                            s = sequence.complement_sequence(s, reverse=True)
+                        nascent_entry = FastaEntry(header, s)
+                        f_out.write(nascent_entry)
+
+    return out_path

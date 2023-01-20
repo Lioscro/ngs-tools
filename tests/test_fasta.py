@@ -53,3 +53,11 @@ class TestFasta(mixins.TestMixin, TestCase):
             self.fasta2_path, path, gene_infos, transcript_infos, flank=1
         )
         self.assertTrue(mixins.files_equal(self.intron_fasta_path, path))
+
+    def test_split_genomic_fasta_to_nascent(self):
+        path = os.path.join(self.temp_dir, 'test.fa')
+        gene_infos, transcript_infos = gtf.genes_and_transcripts_from_gtf(
+            self.gtf_path, use_version=False
+        )
+        fasta.split_genomic_fasta_to_nascent(self.fasta2_path, path, gene_infos)
+        self.assertTrue(mixins.files_equal(self.nascent_fasta_path, path))

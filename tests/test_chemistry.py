@@ -182,7 +182,10 @@ class TestSequencingChemistry(TestMixin, TestCase):
             'umi': ('abcdefgh',),
             'cdna': ('ABCEDEFGHIJKLMNOPQRSTUVWXYZ', 'IJKLMNOPQRSTUVWXYZ')
         },
-                         chemistry.get_chemistry('STORM-seq').parse([seq1, seq2]))
+                         chemistry.get_chemistry('STORM-seq').parse([
+                             seq1, seq2
+                         ]))
+
     def test_to_kallisto_bus_arguments(self):
         chem = chemistry.get_chemistry('10xv3')
         self.assertEqual({'-x': '0,0,16:0,16,28:1,0,0'},
@@ -246,6 +249,10 @@ class TestSequencingChemistry(TestMixin, TestCase):
         self.assertEqual(
             chemistry.get_chemistry('10xv3'), chemistry.get_chemistry('10XV3')
         )
+
+    def test_get_chemistry_raises_error_on_multiple(self):
+        with self.assertRaises(chemistry.ChemistryError):
+            chemistry.get_chemistry('10x')
 
     def test_lengths(self):
         self.assertEqual((28, None), chemistry.get_chemistry('10xv3').lengths)
