@@ -1,4 +1,5 @@
 import re
+from typing import Optional, Tuple
 
 from .Chemistry import (
     Chemistry,
@@ -31,17 +32,17 @@ VERSION_PARSER = re.compile(r'v?\d+$')
 CHEMISTRIES = SINGLE_CELL_CHEMISTRIES + SPATIAL_CHEMISTRIES + MULTIMODAL_CHEMISTRIES
 
 
-def _clean_name(name: str):
+def _clean_name(name: str) -> Tuple[str, Optional[int]]:
     """Internal helper function to clean chemistry names.
 
     Args:
         name: String name of the chemistry.
 
     Returns:
-        Cleaned name
+        Tuple of the cleaned name and version
     """
     name = name.lower().replace('-', '').replace(' ', '')
-    version = 1
+    version = None
     base_name = name
 
     version_search = VERSION_PARSER.search(name)
@@ -56,7 +57,7 @@ def _clean_name(name: str):
     return base_name, version
 
 
-def get_chemistry(name: str):
+def get_chemistry(name: str) -> Chemistry:
     """Fetch a :class:`Chemistry` definition by name. Uses some regex magic to
     correctly deal with chemistry versioning at the end of the name. For instance,
     ``10x2`` is interpreted the same as ``10xv2``.
