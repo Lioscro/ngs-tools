@@ -79,7 +79,7 @@ def get_chemistry(name: str) -> Chemistry:
     matching = []
     for chemistry in CHEMISTRIES:
         base_name, version = _clean_name(chemistry.name)
-        if cleaned_name in base_name and cleaned_version == version:
+        if cleaned_name == base_name and cleaned_version == version:
             matching.append(chemistry)
 
     if len(matching) == 1:
