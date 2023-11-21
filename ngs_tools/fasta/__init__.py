@@ -35,9 +35,10 @@ def split_genomic_fasta_to_cdna(
             for gene_id, gene_attributes in gene_infos.items():
                 if gene_attributes['chromosome'] == entry.name:
                     _gene_infos[gene_id] = gene_attributes
+                    all_transcripts = sorted(gene_attributes['transcripts'])
                     _transcript_infos.update({
                         transcript_id: transcript_infos[transcript_id]
-                        for transcript_id in gene_attributes['transcripts']
+                        for transcript_id in all_transcripts
                     })
 
             # Write all transcripts as separate FASTA entries.
@@ -107,9 +108,10 @@ def split_genomic_fasta_to_intron(
             for gene_id, gene_attributes in gene_infos.items():
                 if gene_attributes['chromosome'] == entry.name:
                     _gene_infos[gene_id] = gene_attributes
+                    all_transcripts = sorted(gene_attributes['transcripts'])
                     _transcript_infos.update({
                         transcript_id: transcript_infos[transcript_id]
-                        for transcript_id in gene_attributes['transcripts']
+                        for transcript_id in all_transcripts
                     })
 
             # Write all transcripts as separate FASTA entries.
