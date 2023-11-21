@@ -150,7 +150,7 @@ class TestUtils(mixins.TestMixin, TestCase):
             self.assertEqual(f.read(), 'TEST1\nTEST2\n')
 
     def test_download_file(self):
-        with mock.patch('ngs_tools.utils.urlretrieve') as urlretrieve,\
+        with mock.patch('ngs_tools.utils.urlretrieve') as urlretrieve, \
             mock.patch('ngs_tools.utils.TqdmUpTo', mixins.tqdm_mock):
             path = os.path.join(self.temp_dir, 'test')
             self.assertEqual(path, utils.download_file('remote/path', path))
@@ -162,8 +162,8 @@ class TestUtils(mixins.TestMixin, TestCase):
             )
 
     def test_stream_file(self):
-        with mock.patch('ngs_tools.utils.os.mkfifo'),\
-            mock.patch('ngs_tools.utils.urlretrieve') as urlretrieve,\
+        with mock.patch('ngs_tools.utils.os.mkfifo'), \
+            mock.patch('ngs_tools.utils.urlretrieve') as urlretrieve, \
             mock.patch('ngs_tools.utils.threading.Thread') as Thread:
             with utils.stream_file('remote/path', 'local/path') as path:
                 self.assertEqual('local/path', path)
@@ -177,8 +177,8 @@ class TestUtils(mixins.TestMixin, TestCase):
             Thread.return_value.join.assert_called_once()
 
     def test_stream_file_not_supported(self):
-        with mock.patch('ngs_tools.utils.os.mkfifo') as mkfifo,\
-            mock.patch('ngs_tools.utils.urlretrieve'),\
+        with mock.patch('ngs_tools.utils.os.mkfifo') as mkfifo, \
+            mock.patch('ngs_tools.utils.urlretrieve'), \
             mock.patch('ngs_tools.utils.threading.Thread') as Thread:
             mkfifo.side_effect = AttributeError('test')
             with self.assertRaises(OSError):
@@ -187,8 +187,8 @@ class TestUtils(mixins.TestMixin, TestCase):
                 Thread.assert_not_called()
 
     def test_stream_file_exception(self):
-        with mock.patch('ngs_tools.utils.os.mkfifo'),\
-            mock.patch('ngs_tools.utils.urlretrieve') as urlretrieve,\
+        with mock.patch('ngs_tools.utils.os.mkfifo'), \
+            mock.patch('ngs_tools.utils.urlretrieve') as urlretrieve, \
             mock.patch('ngs_tools.utils.threading.Thread') as Thread:
             with self.assertRaises(Exception):
                 with utils.stream_file('remote/path', 'local/path') as path:
