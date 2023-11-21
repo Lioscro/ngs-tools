@@ -54,10 +54,11 @@ NUCLEOTIDE_COMPLEMENT = {
     'V': 'B',
 }
 NUCLEOTIDE_MASKS = {
-    n: np.array([
-        _n in NUCLEOTIDES_AMBIGUOUS.get(n, [n]) for _n in NUCLEOTIDES_STRICT
-    ],
-                dtype=bool)
+    n:
+        np.array([
+            _n in NUCLEOTIDES_AMBIGUOUS.get(n, [n]) for _n in NUCLEOTIDES_STRICT
+        ],
+                 dtype=bool)
     for n in NUCLEOTIDES
 }
 MASK_TO_NUCLEOTIDE = {tuple(mask): n for n, mask in NUCLEOTIDE_MASKS.items()}
