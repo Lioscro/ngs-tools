@@ -324,7 +324,7 @@ _SPLITSEQ = SingleCellChemistry(
     name='SPLiT-seq',
     description='Rosenberg et al. 2018',
     n=2,
-    strand=SequencingStrand.UNSTRANDED,
+    strand=SequencingStrand.FORWARD,
     cdna_parser=SubSequenceParser(SubSequenceDefinition(0)),
     cell_barcode_parser=SubSequenceParser(
         SubSequenceDefinition(1, 10, 8),
