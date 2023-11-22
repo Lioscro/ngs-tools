@@ -106,7 +106,7 @@ class TestSequence(mixins.TestMixin, TestCase):
         sequences = ['ACTG', 'ACTT', 'AGCC', 'TTTT']
         qualities = ['AAAA', 'AAAA', 'AAAA', 'AAAA']
         whitelist = ['ACTG', 'TTTN']
-        with mock.patch('ngs_tools.sequence.utils.progress', mixins.tqdm_mock),\
+        with mock.patch('ngs_tools.sequence.utils.progress', mixins.tqdm_mock), \
             mock.patch('ngs_tools.sequence.progress', mixins.tqdm_mock):
             corrections = sequence.correct_sequences_to_whitelist(
                 sequences, qualities, whitelist
@@ -116,7 +116,7 @@ class TestSequence(mixins.TestMixin, TestCase):
     def test_correct_sequences_to_whitelist_simple(self):
         sequences = ['ACTG', 'ACTT', 'AGCC', 'TTTT']
         whitelist = ['ACTG', 'TTTN']
-        with mock.patch('ngs_tools.sequence.utils.progress', mixins.tqdm_mock),\
+        with mock.patch('ngs_tools.sequence.utils.progress', mixins.tqdm_mock), \
             mock.patch('ngs_tools.sequence.progress', mixins.tqdm_mock):
             corrections = sequence.correct_sequences_to_whitelist_simple(
                 sequences, whitelist

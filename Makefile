@@ -2,11 +2,10 @@
 
 test:
 	rm -f .coverage
-	nosetests --verbose --with-coverage --cover-package ngs_tools tests/*
+	pytest -v --cov=ngs_tools tests
 
 check:
-	flake8 ngs_tools && echo OK
-	yapf -r --diff ngs_tools && echo OK
+	pre-commit run --all-files
 
 build:
 	python setup.py sdist
