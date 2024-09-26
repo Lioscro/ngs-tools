@@ -133,7 +133,18 @@ _10X_V3 = SingleCellChemistry(
         WHITELISTS_DIR, '10x_version3_whitelist.txt.gz'
     ),
 )
-
+_10X_V4 = SingleCellChemistry(
+    name='10xv4',
+    description='10x Genomics 3\' version 4',
+    n=2,
+    strand=SequencingStrand.FORWARD,
+    cdna_parser=SubSequenceParser(SubSequenceDefinition(1)),
+    cell_barcode_parser=SubSequenceParser(SubSequenceDefinition(0, 0, 16)),
+    umi_parser=SubSequenceParser(SubSequenceDefinition(0, 16, 12)),
+    whitelist_path=os.path.join(
+        WHITELISTS_DIR, '10x_version4_whitelist.txt.gz'
+    ),
+)
 _10X_V3_ULTIMA = SingleCellChemistry(
     name='10xv3_Ultima',
     description='10x Genomics 3\' version 3 sequenced with Ultima',
