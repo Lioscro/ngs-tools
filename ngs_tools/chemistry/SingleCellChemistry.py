@@ -333,9 +333,7 @@ _BDWTA = SingleCellChemistry(
 )
 _SPLITSEQ = SingleCellChemistry(
     name='SPLiT-seq',
-    description=(
-        'SPLiT-seq version 2; split-pool barcoding method (Rosenberg et al. 2018)'
-    ),
+    description='SPLiT-seq version 2; Rosenberg et al. 2018',
     n=2,
     strand=SequencingStrand.FORWARD,
     cdna_parser=SubSequenceParser(SubSequenceDefinition(0)),
