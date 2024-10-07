@@ -333,7 +333,9 @@ _BDWTA = SingleCellChemistry(
 )
 _SPLITSEQ = SingleCellChemistry(
     name='SPLiT-seq',
-    description='Rosenberg et al. 2018',
+    description=(
+        'SPLiT-seq version 2; split-pool barcoding RNA-seq method (Rosenberg et al. 2018)'
+    ),
     n=2,
     strand=SequencingStrand.FORWARD,
     cdna_parser=SubSequenceParser(SubSequenceDefinition(0)),
@@ -343,11 +345,12 @@ _SPLITSEQ = SingleCellChemistry(
         SubSequenceDefinition(1, 78, 8),
     ),
     umi_parser=SubSequenceParser(SubSequenceDefinition(1, 0, 10)),
+    whitelist_path=os.path.join(WHITELISTS_DIR, 'splitseq_version2_whitelist.txt.gz'),
 )
 _PLATE_SINGLE_CELL_CHEMISTRIES = [_SMARTSEQ_V2, _SMARTSEQ_V3, _BDWTA, _STORMSEQ]
 _DROPLET_SINGLE_CELL_CHEMISTRIES = [
     _DROPSEQ, _10X_V1, _10X_V2, _10X_V3, _10X_V3_ULTIMA, _10X_FB, _10X_ATAC,
-    _INDROPS_V1, _INDROPS_V2, _INDROPS_V3, _SURECELL, _SCI_FATE
+    _10X_V4, _INDROPS_V1, _INDROPS_V2, _INDROPS_V3, _SURECELL, _SCI_FATE
 ]
 _OTHER_SINGLE_CELL_CHEMISTRIES = [_CELSEQ_V1, _CELSEQ_V2, _SCRBSEQ, _SPLITSEQ]
 SINGLE_CELL_CHEMISTRIES = (
