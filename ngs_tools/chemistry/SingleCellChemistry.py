@@ -345,7 +345,9 @@ _SPLITSEQ = SingleCellChemistry(
         SubSequenceDefinition(1, 78, 8),
     ),
     umi_parser=SubSequenceParser(SubSequenceDefinition(1, 0, 10)),
-    whitelist_path=os.path.join(WHITELISTS_DIR, 'splitseq_version2_whitelist.txt.gz'),
+    whitelist_path=os.path.join(
+        WHITELISTS_DIR, 'splitseq_version2_whitelist.txt.gz'
+    ),
 )
 _PLATE_SINGLE_CELL_CHEMISTRIES = [_SMARTSEQ_V2, _SMARTSEQ_V3, _BDWTA, _STORMSEQ]
 _DROPLET_SINGLE_CELL_CHEMISTRIES = [
